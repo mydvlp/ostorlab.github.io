@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  Reversing JNI, or how Facebook is crashing their own application | Autonomous Security
+</title>
+    <link rel="canonical" href="/reversing-jni-facebook-crashing-android.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="Apparently Facebook is crashing their apps intentionally in order to test users reaction and evaluate their adherence to Facebook service. This post is however not about the user's behavioral analysis, but about the technical aspects of how it is done - or just an excuse to dive into JNI reversing.">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  Reversing JNI, or how Facebook is crashing their own application
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2016-01-07T11:20:00+01:00">
+          <i class="fa fa-calendar-o"></i>
+          Thu 07 January 2016
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/mobile.html">Mobile</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/android.html">android</a>,               <a href="/tag/reverse.html">reverse</a>,               <a href="/tag/java.html">java</a>,               <a href="/tag/jni.html">jni</a>,               <a href="/tag/mobile.html">mobile</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>Apparently <a href="http://www.popularmechanics.com/technology/apps/news/a18837/facebook-has-been-intentionally-crashing-its-android-app-on-users/">Facebook is crashing their apps</a>
+ intentionally in order to test users reaction and evaluate their adherence to Facebook service. This post is however
+ not about the user's behavioral analysis, but about the technical aspects of how it is done - or just an excuse to
+ dive into JNI reversing.</p>
+<p>First of all, what lead us to talk about JNI for the Facebook app crashing feature. Well using the Ostorlab Mobile
+ Application Security Scanner (it's completely free and you can test it already) we discovered the following native
+ methods:</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/reversing_jni/1.png"/></p>
+<p>Native method indicate that it is implemented in native code using JNI (Java Native Interface).</p>
+<p>JNI is basically the way you can write code accessible from Java in C/C++. This is usually done for different reasons,
+ performance could be one of them. The advantages of writing native code are mainly performance, better code
+ obfuscation and the possibility to access low level functionality. Disadvantages are lack of portability and higher
+ security risk.</p>
+<p>Native methods are therefore excellent candidates from an attacker's perspective if they handle user's input. In the 
+example of the Instagram app, native methods are used to handle images and videos and are therefore potentially 
+vulnerable to memory corruption errors.</p>
+<p>Reversing and Fuzzing of JNI seems to be an under-researched subject, despite it's important role for Android Mobile
+ Applications.</p>
+<p>Let's get back to our Facebook <code>crashThisProcess</code> method, how can we find the method implementation ?</p>
+<p>If we check Java JNI specification on how the JVM resolve methods, here is what is written:</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/reversing_jni/2.jpg"/></p>
+<p>After checking in the libs symbols by searching for the string <code>Java_</code> we could not find any method named 
+<code>crashThisProcess</code>.</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/reversing_jni/3.jpg"/></p>
+<p>Inspecting the OpenJDK VM confirms the specification but doesn't provide any more clues:</p>
+<p>However searching for the string crashThisProcess, we found it in libbreakpad.so:</p>
+<p>Let's reverse the binary and try to understand how this string is referenced. Opening the binary in IDA and searching 
+for the string, we find it in the .rodata section:</p>
+<p>This strings is referenced by the following structure:</p>
+<p>After more research we found the structure matches the JNINativeMethod structure:</p>
+<p>And this is a sample code the demonstrates how it could be used:</p>
+<div class="highlight"><pre><span></span><span class="cm">/*</span>
+<span class="cm"> * Copyright (C) 2008 The Android Open Source Project</span>
+<span class="cm"> *</span>
+<span class="cm"> * Licensed under the Apache License, Version 2.0 (the "License");</span>
+<span class="cm"> * you may not use this file except in compliance with the License.</span>
+<span class="cm"> * You may obtain a copy of the License at</span>
+<span class="cm"> *</span>
+<span class="cm"> *      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="cm"> *</span>
+<span class="cm"> * Unless required by applicable law or agreed to in writing, software</span>
+<span class="cm"> * distributed under the License is distributed on an "AS IS" BASIS,</span>
+<span class="cm"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="cm"> * See the License for the specific language governing permissions and</span>
+<span class="cm"> * limitations under the License.</span>
+<span class="cm"> */</span>
+
+<span class="cp">#define LOG_TAG "simplejni native.cpp"</span>
+<span class="cp">#include</span> <span class="cpf">&lt;utils/Log.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">"jni.h"</span><span class="cp"></span>
+
+<span class="k">static</span> <span class="n">jint</span>
+<span class="nf">add</span><span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">thiz</span><span class="p">,</span> <span class="n">jint</span> <span class="n">a</span><span class="p">,</span> <span class="n">jint</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+<span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">;</span>
+    <span class="n">ALOGI</span><span class="p">(</span><span class="s">"%d + %d = %d"</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">result</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">classPathName</span> <span class="o">=</span> <span class="s">"com/example/android/simplejni/Native"</span><span class="p">;</span>
+<span class="k">static</span> <span class="n">JNINativeMethod</span> <span class="n">methods</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="p">{</span><span class="s">"add"</span><span class="p">,</span> <span class="s">"(II)I"</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">add</span> <span class="p">},</span>
+<span class="p">};</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * Register several native methods for one class.</span>
+<span class="cm"> */</span>
+
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">registerNativeMethods</span><span class="p">(</span><span class="n">JNIEnv</span><span class="o">*</span> <span class="n">env</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">className</span><span class="p">,</span>
+    <span class="n">JNINativeMethod</span><span class="o">*</span> <span class="n">gMethods</span><span class="p">,</span> <span class="kt">int</span> <span class="n">numMethods</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">jclass</span> <span class="n">clazz</span><span class="p">;</span>
+    <span class="n">clazz</span> <span class="o">=</span> <span class="n">env</span><span class="o">-&gt;</span><span class="n">FindClass</span><span class="p">(</span><span class="n">className</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">clazz</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ALOGE</span><span class="p">(</span><span class="s">"Native registration unable to find class '%s'"</span><span class="p">,</span> <span class="n">className</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">JNI_FALSE</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">env</span><span class="o">-&gt;</span><span class="n">RegisterNatives</span><span class="p">(</span><span class="n">clazz</span><span class="p">,</span> <span class="n">gMethods</span><span class="p">,</span> <span class="n">numMethods</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ALOGE</span><span class="p">(</span><span class="s">"RegisterNatives failed for '%s'"</span><span class="p">,</span> <span class="n">className</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">JNI_FALSE</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">JNI_TRUE</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * Register native methods for all classes we know about.</span>
+<span class="cm"> *</span>
+<span class="cm"> * returns JNI_TRUE on success.</span>
+<span class="cm"> */</span>
+
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">registerNatives</span><span class="p">(</span><span class="n">JNIEnv</span><span class="o">*</span> <span class="n">env</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">registerNativeMethods</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">classPathName</span><span class="p">,</span>
+                 <span class="n">methods</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">methods</span><span class="p">)</span> <span class="o">/</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">methods</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">JNI_FALSE</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="n">JNI_TRUE</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// ----------------------------------------------------------------------------</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * This is called by the VM when the shared library is first loaded.</span>
+<span class="cm"> */</span>
+
+<span class="k">typedef</span> <span class="k">union</span> <span class="p">{</span>
+    <span class="n">JNIEnv</span><span class="o">*</span> <span class="n">env</span><span class="p">;</span>
+    <span class="kt">void</span><span class="o">*</span> <span class="n">venv</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">UnionJNIEnvToVoid</span><span class="p">;</span>
+
+<span class="n">jint</span> <span class="nf">JNI_OnLoad</span><span class="p">(</span><span class="n">JavaVM</span><span class="o">*</span> <span class="n">vm</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">reserved</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">UnionJNIEnvToVoid</span> <span class="n">uenv</span><span class="p">;</span>
+    <span class="n">uenv</span><span class="p">.</span><span class="n">venv</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">jint</span> <span class="n">result</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+    <span class="n">JNIEnv</span><span class="o">*</span> <span class="n">env</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">ALOGI</span><span class="p">(</span><span class="s">"JNI_OnLoad"</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">vm</span><span class="o">-&gt;</span><span class="n">GetEnv</span><span class="p">(</span><span class="o">&amp;</span><span class="n">uenv</span><span class="p">.</span><span class="n">venv</span><span class="p">,</span> <span class="n">JNI_VERSION_1_4</span><span class="p">)</span> <span class="o">!=</span> <span class="n">JNI_OK</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ALOGE</span><span class="p">(</span><span class="s">"ERROR: GetEnv failed"</span><span class="p">);</span>
+        <span class="k">goto</span> <span class="n">bail</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">uenv</span><span class="p">.</span><span class="n">env</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">registerNatives</span><span class="p">(</span><span class="n">env</span><span class="p">)</span> <span class="o">!=</span> <span class="n">JNI_TRUE</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ALOGE</span><span class="p">(</span><span class="s">"ERROR: registerNatives failed"</span><span class="p">);</span>
+        <span class="k">goto</span> <span class="n">bail</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">JNI_VERSION_1_4</span><span class="p">;</span>
+
+<span class="nl">bail</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+<p>The methods seem to be registered dynamically during loading in the JNI_OnLoad function using registerNativeMethods
+ function. The last element points to the JNI method body. For instance in the case of the crashThisProcess method,
+  this is the disassembly of the method body (the name of the subroutine was added manually):</p>
+<p>We can see that the function writes <code>0x2A</code> to memory address <code>0x000000</code>, which will segfault the process.</p>
+<p>Experimenting with method automated identification of these structure using the Java method signature unique format
+and then checking the rest of the structure, allowed us to write a script (available on Github) that finds JNI
+methods exported dynamically using <code>JNI_OnLoad</code> or statically in the exported symbol:</p>
+<p>Ostorlab Mobile Application Security Scanner will list these methods automatically in the upcoming versions.</p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

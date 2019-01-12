@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  Python Concurrency and Parallelism: building a custom ProcessPoolExecutor | Autonomous Security
+</title>
+    <link rel="canonical" href="/custom-process-pool-executor.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="At Ostorlab we scan hundreds of Mobile Applications each day, each scan is very resource intensive but at the same time, since the beginning, we had to optimize the code for speed and maximize use of cloud resources.">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  Python Concurrency and Parallelism: building a custom ProcessPoolExecutor
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2016-07-18T11:20:00+02:00">
+          <i class="fa fa-calendar-o"></i>
+          Mon 18 July 2016
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/programming.html">Programming</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/python.html">Python</a>,               <a href="/tag/performance.html">Performance</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>At Ostorlab we scan hundreds of Mobile Applications each day, each scan is very resource intensive but at the same 
+time, since the beginning,  we had to optimize the code for speed and maximize use of cloud resources.</p>
+<p>Without re-discussing concurrency and parallelism on Python, there are plenty of excellent ressources on the subject, 
+my favorite is "Fluent Python" by Luciano Ramalho.</p>
+<p>But here are some quick notes:</p>
+<p>In CPython, the GIL prevents multiple native threads from executing Python bytecodes at once. This means that Threading 
+is inappropriate for CPU-bound parallelism. I recommend these talk for more information on the subject "Understanding 
+the Python GIL" and "Removing Python's GIL: The Gilectomy"
+Processing is more adapted to CPU-bound parallelism, however spawning a process results in a significant overhead, if 
+the goal is to run multiple tasks both concurrently and in parallel, running each task in a separate process is highly 
+inefficient
+To solve that issue, concurrent.futures library was introduced in Python 3.2 and back-ported to Python 2.5. The library 
+allows spawning a number of workers, default is the number of cores on your computer, to which you can pass tasks for 
+processing. Tasks are sent through queues after being serialized using Pickle.</p>
+<p>This is an example from Fluent Python public Github:</p>
+<div class="highlight"><pre><span></span><span class="sd">"""Download flags of top 20 countries by population</span>
+<span class="sd">ProcessPoolExecutor version</span>
+<span class="sd">Sample run::</span>
+<span class="sd">    $ python3 flags_threadpool.py    BD retrieved.    EG retrieved.    CN retrieved.    ...    PH retrieved.    </span>
+<span class="sd">    US retrieved.    IR retrieved.    20 flags downloaded in 0.93s</span>
+<span class="sd">"""</span>
+<span class="c1"># BEGIN FLAGS_PROCESSPOOL</span>
+
+<span class="kn">from</span> <span class="nn">concurrent</span> <span class="kn">import</span> <span class="n">futures</span>
+<span class="kn">from</span> <span class="nn">flags</span> <span class="kn">import</span> <span class="n">save_flag</span><span class="p">,</span> <span class="n">get_flag</span><span class="p">,</span> <span class="n">show</span><span class="p">,</span> <span class="n">main</span>
+
+<span class="n">MAX_WORKERS</span> <span class="o">=</span> <span class="mi">20</span>
+
+<span class="k">def</span> <span class="nf">download_one</span><span class="p">(</span><span class="n">cc</span><span class="p">):</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">get_flag</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
+    <span class="n">show</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
+    <span class="n">save_flag</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">cc</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">+</span> <span class="s1">'.gif'</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">cc</span>
+
+
+<span class="k">def</span> <span class="nf">download_many</span><span class="p">(</span><span class="n">cc_list</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">futures</span><span class="o">.</span><span class="n">ProcessPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>  <span class="c1"># &lt;1&gt;        </span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">download_one</span><span class="p">,</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">cc_list</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">res</span><span class="p">))</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">(</span><span class="n">download_many</span><span class="p">)</span>
+<span class="c1"># END FLAGS_PROCESSPOOL</span>
+</pre></div>
+<p>Playing with this, we rapidly faced a lot of limitations because of Pickle serialization limitations, the two main 
+issues were:</p>
+<p>Some tasks were decorated with parameterized decorators which caused a similar error to this one 
+<code>Error pickling &lt;function&gt;</code>. The arguments passed were sometimes quite big and resulted in a <code>recursion limit</code> error. 
+For the second issue, we had to think of a way to pass arguments to tasks without going through the queue and the 
+serialization process.</p>
+<p>Before using the <code>ProcessPoolExecutor</code>, we used simple Processes which received the arguments in args parameter:</p>
+<div class="highlight"><pre><span></span><span class="n">p</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span>
+        <span class="n">target</span><span class="o">=</span><span class="n">_process_worker</span><span class="p">,</span>
+        <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_call_queue</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">_result_queue</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">_initial_args</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">_initial_kwargs</span><span class="p">))</span>
+</pre></div>
+<p>Passing arguments this way posed no issue on the size and requires of course no serialization. Python allows to pass 
+queues, pipes and even shared memory using the types multiprocessing.Value and multiprocessing.Array (see 
+multiprocessing)</p>
+<p>The particularity of our code was that the passed argument were always the same and significant in size, so we 
+decided to modify ProcessPoolExecutor to pass these arguments at the initialization which he then passes to the spawned 
+working processes.</p>
+<p>Tasks will be executed with these argument as initial parameters, here are the main changes, add initial_args and 
+initial_kwargs attributes:</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ProcessPoolExecutor</span><span class="p">(</span><span class="n">_base</span><span class="o">.</span><span class="n">Executor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">"""Initializes a new ProcessPoolExecutor instance.</span>
+<span class="sd">        Args:            max_workers: The maximum number of processes that can be used to               </span>
+<span class="sd">         execute the given calls. If None or not given then as many                </span>
+<span class="sd">         worker processes will be created as the machine has processors.        </span>
+<span class="sd">        """</span>        
+        <span class="n">_check_system_limits</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">max_workers</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_max_workers</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_max_workers</span> <span class="o">=</span> <span class="n">max_workers</span>
+
+        <span class="c1"># Make the call queue slightly larger than the number of processes to        </span>
+        <span class="c1"># prevent the worker processes from idling. But don't make it too big        </span>
+        <span class="c1"># because futures in the call queue cannot be cancelled.        </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_call_queue</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_workers</span> <span class="o">+</span> <span class="n">EXTRA_QUEUED_CALLS</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result_queue</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_work_ids</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_queue_management_thread</span> <span class="o">=</span> <span class="bp">None</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># Shutdown is a two-step process.        self._shutdown_thread = False        self._shutdown_lock = threading.Lock()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_queue_count</span> <span class="o">=</span> <span class="mi">0</span>  
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_work_items</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initial_args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initial_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+</pre></div>
+<p>Pass the attributes to the spawned processes:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_adjust_process_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_workers</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="n">_process_worker</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_call_queue</span><span class="p">,</span>
+                      <span class="bp">self</span><span class="o">.</span><span class="n">_result_queue</span><span class="p">,</span>
+                      <span class="bp">self</span><span class="o">.</span><span class="n">_initial_args</span><span class="p">,</span>
+                      <span class="bp">self</span><span class="o">.</span><span class="n">_initial_kwargs</span><span class="p">))</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</pre></div>
+<p>Use the parameters to run each task:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_process_worker</span><span class="p">(</span><span class="n">call_queue</span><span class="p">,</span> <span class="n">result_queue</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">"""Evaluates calls from call_queue and places the results in result_queue.</span>
+<span class="sd">    This worker is run in a separate process.</span>
+<span class="sd">    Args:        call_queue: A multiprocessing.Queue of _CallItems that will be read and            </span>
+<span class="sd">    evaluated by the worker.        </span>
+<span class="sd">    result_queue: A multiprocessing.Queue of _ResultItems that will written            </span>
+<span class="sd">    to by the worker.        </span>
+<span class="sd">    shutdown: A multiprocessing.Event that will be set as a signal to the            </span>
+<span class="sd">    worker that it should exit when call_queue is empty.    </span>
+<span class="sd">    """</span>    
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">call_item</span> <span class="o">=</span> <span class="n">call_queue</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">call_item</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c1"># Wake up queue management thread</span>
+            <span class="n">result_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+            <span class="k">return</span>        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">+=</span> <span class="n">call_item</span><span class="o">.</span><span class="n">args</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">call_item</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">call_item</span><span class="o">.</span><span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">result_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">_ResultItem</span><span class="p">(</span><span class="n">call_item</span><span class="o">.</span><span class="n">work_id</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="n">e</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">_ResultItem</span><span class="p">(</span><span class="n">call_item</span><span class="o">.</span><span class="n">work_id</span><span class="p">,</span> <span class="n">result</span><span class="o">=</span><span class="n">r</span><span class="p">))</span>
+</pre></div>
+<p>The benefit was even greater as we removed all the extra processing due to serialization of the same object.</p>
+<p>The same code went from executing for more than 20 mins to less than a minute thanks to the use of multiprocessing, 
+fixed process spawning overhead and bypassing all the extra serialization.</p>
+<p>Going further, we plan on experimenting with Go and Unikernels to see if we can gain more performance.</p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

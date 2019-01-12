@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  Testing Cordova Applications | Autonomous Security
+</title>
+    <link rel="canonical" href="/testing-cordova-applications.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="Hybrid frameworks like Cordova offers the advantage of building one app for multiple platform (support for Android, iOS, Windows Phone, FireOS, FirefoxOS ...) . The framework is easy and fast to develop with and offers generally a single API for all platforms.">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  Testing Cordova Applications
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2016-11-24T11:20:00+01:00">
+          <i class="fa fa-calendar-o"></i>
+          Thu 24 November 2016
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/mobile.html">Mobile</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/cordova.html">cordova</a>,               <a href="/tag/android.html">android</a>,               <a href="/tag/ios.html">ios</a>,               <a href="/tag/multiplatform.html">multiplatform</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <h2>Native vs. Hybrid:</h2>
+<p>Hybrid frameworks like Cordova offers the advantage of building one app for multiple platform (support for Android, 
+iOS, Windows Phone, FireOS, FirefoxOS ...) . The framework is easy and fast to develop with and offers generally a 
+single API for all platforms. </p>
+<p>Hybrid apps suffer however from performance issues, even if the latest versions have made great enhances to the speed 
+of the framework and the speed delay is unnoticeable on modern phones.</p>
+<h2>Cordova:</h2>
+<p>Cordova is platform to develop hybrid mobile apps using HTML5, CSS3 and Javascript, it is open-source and licensed 
+under Apache Licence version 2.0, the core components offer a rich set of functionality in JavaScript, which can be 
+extended using native languages.</p>
+<h2>Internals:</h2>
+<p>To review the security of a Cordova mobile application, it is important to have an initial understanding of the 
+internals of the framework to know what to look for and where.</p>
+<h2><code>config.xml</code>:</h2>
+<p><code>config.xml</code> is the main configuration file that defines several aspects of the mobile application, like enabled 
+plugins, platform specific settings and list of custom hooks. For more information on the options of <code>config.xml</code> file, 
+please check the following <a href="https://cordova.apache.org/docs/en/latest/config_ref/">URL</a>.</p>
+<p>For a security audit, it is the first thing to check to have an initial understanding of the application capabilities.</p>
+<div class="highlight"><pre><span></span><span class="cp">&lt;?xml version='1.0' encoding='utf-8'?&gt;</span>
+<span class="nt">&lt;widget</span> <span class="na">id=</span><span class="s">"io.cordova.hellocordova"</span> <span class="na">version=</span><span class="s">"0.0.1"</span> <span class="na">xmlns=</span><span class="s">"http://www.w3.org/ns/widgets"</span> <span class="na">xmlns:cdv=</span><span class="s">"http://cordova.apache.org/ns/1.0"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;name&gt;</span>HelloCordova<span class="nt">&lt;/name&gt;</span>
+  <span class="nt">&lt;description&gt;</span>
+      A sample Apache Cordova application that responds to the deviceready event.
+  <span class="nt">&lt;/description&gt;</span>
+  <span class="nt">&lt;author</span> <span class="na">email=</span><span class="s">"dev@cordova.apache.org"</span> <span class="na">href=</span><span class="s">"http://cordova.io"</span><span class="nt">&gt;</span>
+      Apache Cordova Team
+  <span class="nt">&lt;/author&gt;</span>
+  <span class="nt">&lt;content</span> <span class="na">src=</span><span class="s">"index.html"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;plugin</span> <span class="na">name=</span><span class="s">"cordova-plugin-whitelist"</span> <span class="na">spec=</span><span class="s">"1"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;access</span> <span class="na">origin=</span><span class="s">"*"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;allow-intent</span> <span class="na">href=</span><span class="s">"http://*/*"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;allow-intent</span> <span class="na">href=</span><span class="s">"https://*/*"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;allow-intent</span> <span class="na">href=</span><span class="s">"tel:*"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;allow-intent</span> <span class="na">href=</span><span class="s">"sms:*"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;allow-intent</span> <span class="na">href=</span><span class="s">"mailto:*"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;allow-intent</span> <span class="na">href=</span><span class="s">"geo:*"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;platform</span> <span class="na">name=</span><span class="s">"android"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;allow-intent</span> <span class="na">href=</span><span class="s">"market:*"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/platform&gt;</span>
+  <span class="nt">&lt;platform</span> <span class="na">name=</span><span class="s">"ios"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;allow-intent</span> <span class="na">href=</span><span class="s">"itms:*"</span> <span class="nt">/&gt;</span>
+      <span class="nt">&lt;allow-intent</span> <span class="na">href=</span><span class="s">"itms-apps:*"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/platform&gt;</span>
+<span class="nt">&lt;/widget&gt;</span>
+</pre></div>
+<p>The <code>config.xml</code> file resides at the root of the Cordova project folder which as the following structure:</p>
+<ul>
+<li><code>hooks</code>: allows to modify how the Cordova CLI works</li>
+<li><code>platforms</code>: hosts the native code for each platform. It is possible for developers to modify it to extend or alter the 
+Cordova framework, although the recommended way is to add plugins.</li>
+<li><code>plugins</code>: plugins extend the JavaScript API and are stored in the current folder</li>
+<li><code>www</code>: this is the main folder storing the HTML, JavaScript and CSS code.</li>
+</ul>
+<h2>Whitelist:</h2>
+<p>The whitelist plugin is an important security plugins that defines authorized URI for navigation, intent and network 
+access. The plugins also allows the definition of a CSP (content-security-policy), a very important protection against 
+cross-site scripting (XSS) vulnerabilities, highly dangerous for Cordova application.</p>
+<p>For more information on CSP, I highly recommend the following <a href="https://content-security-policy.com/">link</a> and this 
+<a href="https://www.youtube.com/watch?v=zlH_bBQMgkc">presentation</a> on the new nonce-based protection.</p>
+<div class="highlight"><pre><span></span><span class="c">&lt;!-- Good default declaration:</span>
+<span class="c">    * gap: is required only on iOS (when using UIWebView) and is needed for JS-&gt;native communication</span>
+<span class="c">    * https://ssl.gstatic.com is required only on Android and is needed for TalkBack to function properly</span>
+<span class="c">    * Disables use of eval() and inline scripts in order to mitigate risk of XSS vulnerabilities. To change this:</span>
+<span class="c">        * Enable inline JS: add 'unsafe-inline' to default-src</span>
+<span class="c">        * Enable eval(): add 'unsafe-eval' to default-src</span>
+<span class="c">--&gt;</span>
+<span class="p">&lt;</span><span class="nt">meta</span> <span class="na">http-equiv</span><span class="o">=</span><span class="s">"Content-Security-Policy"</span> <span class="na">content</span><span class="o">=</span><span class="s">"default-src 'self' data: gap: https://ssl.gstatic.com; style-src 'self' 'unsafe-inline'; media-src *"</span><span class="p">&gt;</span>
+
+<span class="c">&lt;!-- Allow everything but only from the same origin and foo.com --&gt;</span>
+<span class="p">&lt;</span><span class="nt">meta</span> <span class="na">http-equiv</span><span class="o">=</span><span class="s">"Content-Security-Policy"</span> <span class="na">content</span><span class="o">=</span><span class="s">"default-src 'self' foo.com"</span><span class="p">&gt;</span>
+
+<span class="c">&lt;!-- This policy allows everything (eg CSS, AJAX, object, frame, media, etc) except that </span>
+<span class="c">    * CSS only from the same origin and inline styles,</span>
+<span class="c">    * scripts only from the same origin and inline styles, and eval()</span>
+<span class="c">--&gt;</span>
+<span class="p">&lt;</span><span class="nt">meta</span> <span class="na">http-equiv</span><span class="o">=</span><span class="s">"Content-Security-Policy"</span> <span class="na">content</span><span class="o">=</span><span class="s">"default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'"</span><span class="p">&gt;</span>
+
+<span class="c">&lt;!-- Allows XHRs only over HTTPS on the same domain. --&gt;</span>
+<span class="p">&lt;</span><span class="nt">meta</span> <span class="na">http-equiv</span><span class="o">=</span><span class="s">"Content-Security-Policy"</span> <span class="na">content</span><span class="o">=</span><span class="s">"default-src 'self' https:"</span><span class="p">&gt;</span>
+
+<span class="c">&lt;!-- Allow iframe to https://cordova.apache.org/ --&gt;</span>
+<span class="p">&lt;</span><span class="nt">meta</span> <span class="na">http-equiv</span><span class="o">=</span><span class="s">"Content-Security-Policy"</span> <span class="na">content</span><span class="o">=</span><span class="s">"default-src 'self'; frame-src 'self' https://cordova.apache.org"</span><span class="p">&gt;</span>
+</pre></div>
+<h2>Plugins:</h2>
+<p>Plugins defines the set of functionalities supported by the application, Cordova has a rich list of existing plugins 
+that allows access to common functionalities like Camera, GPS, Networking and Battery. Developers can develop their 
+own <a href="https://cordova.apache.org/docs/en/latest/guide/hybrid/plugins/index.html">plugins</a> or include one of the 
+hundreds of open-source plugins available <a href="https://cordova.apache.org/docs/en/latest/guide/hybrid/plugins/index.html">here</a>.</p>
+<p>Cordova plugins are easy to develop, for Android for instance, they are implemented by simply extending the class 
+CordovaPlugin and overriding one of the execute methods.</p>
+<h2>Additional frameworks</h2>
+<p>Applications developed using Cordova usually use complementary frameworks like Sencha, Angular or use extended version 
+of Cordova like PhonGap and Ionic. These frameworks extends Cordova functionality to make application development a lot 
+more easier, for instance Ionic provides services such as push notifications, A/B testing, analytics, code deploys, and 
+automated builds.</p>
+<p>These frameworks have their own logic and configuration files.</p>
+<h2>Debugging:</h2>
+<p>Debugging code either for development or for security testing is very helpful to identify bugs and vulnerabilities or 
+to ease understanding of the application. The tools available for debugging depend on the target platform. For Android, 
+it is possible to use Chrome remote debugging, this provides access to all the developer tools inside Cordova. For iOS, 
+it is possible to use the Safari Web Inspector which offers a very similar set of functionality.</p>
+<p>Cordova has become a real alternative to build mobile application. From a security perspective, Cordova introduces new 
+challenges and an extended attack surface, here are some of the common security weaknesses and attention points:</p>
+<h2>Common security weaknesses:</h2>
+<h3>Insecure Whitelist:</h3>
+<p>The whitelist Cordova plugin is an important cornerstone in the security of Cordova apps. As stated 
+earlier, the plugins allows to define authorized URIs the WebView can navigate to, authorized intents the application 
+can request for the case of Android and the authorized networks accesses.</p>
+<p>Another important feature of the plugin is the support of CSP policies to protect against XSS vulnerabilities. CSP is 
+necessary as the whitelist filters do not apply to Websockets and <code>&lt;video&gt;</code> HTML5 tag.</p>
+<p>Permissive policies like:</p>
+<div class="highlight"><pre><span></span><span class="c">&lt;!-- Don't block any requests --&gt;</span>
+<span class="nt">&lt;access</span> <span class="na">origin=</span><span class="s">"*"</span> <span class="nt">/&gt;</span>
+</pre></div>
+<p>are insecure and unfortunately common and facilities the exploitation of XSS vulnerabilities in the application. This 
+vulnerability is checked by the our openly available security scanner.</p>
+<h3>Cross Site Scripting (XSS):</h3>
+<p>From the OWASP definition, Cross-Site Scripting (XSS) attacks are a type of injection, in 
+which malicious scripts are injected into otherwise benign and trusted web sites. XSS attacks occur when an attacker 
+uses a web application to send malicious code, generally in the form of a browser side script, to a different end user. 
+Flaws that allow these attacks to succeed are quite widespread and occur anywhere a web application uses input from a 
+user within the output it generates without validating or encoding it.</p>
+<p>XSS vulnerabilities do apply to Cordova applications and are highly dangerous as they are equivalent to full code 
+execution in the context of the mobile application. The range of possibilities depends on the list of loaded plugins.              </p>
+<h3>Unused plugins</h3>
+<p>Reducing the attack surface of the application is important to reduce the impact of vulnerabilities like XSS, 
+particularly plugins with dangerous functionality, like file, camera and contact access.</p>
+<p>Plugins could also suffer from their own class of vulnerabilities, like SQL injection, insecure filesystem access or 
+XXE injection.</p>
+<h3>Unpatched Cordova versions:</h3>
+<p>Cordova has suffered in the past from several vulnerabilities bypassing the whitelist 
+restrictions, allowing to load arbitrary resources. Fixing the vulnerability usually requires building and publishing 
+a new version of the application.</p>
+<p>For a list of known vulnerabilities, check the following <a href="https://www.cvedetails.com/vulnerability-list/vendor_id-45/product_id-27153/Apache-Cordova.html">URL</a></p>
+<p>Android is still Android  and iOS is still iOS: Beside the new class vulnerabilities introduced by Cordova, particularly
+XSS, a Cordova mobile application is still a mobile application, and classical mobile application vulnerabilities are 
+still applicable.</p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

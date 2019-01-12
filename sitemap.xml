@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+      <loc>/dom-xss-pt1.html</loc>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>/hardcoded-aws-keys-mobile-application.html</loc>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>/testing-cordova-applications.html</loc>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>/custom-process-pool-executor.html</loc>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>/android-ssl-pinning.html</loc>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>/reversing-jni-facebook-crashing-android.html</loc>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>/what-pentesters-learn-2016.html</loc>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>/ostorlab-beta-out.html</loc>
+      <priority>0.8</priority>
+    </url>
+</urlset>
