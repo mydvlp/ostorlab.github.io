@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  New in Android M and N: Runtime Permissions | Autonomous Security
+</title>
+    <link rel="canonical" href="/new-android-m-and-n-runtime-permissions.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="In Android, the permission system was one of the major security concerns of the platform for many reasons...">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  New in Android M and N: Runtime Permissions
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2016-05-27T21:17:00+02:00">
+          <i class="fa fa-calendar-o"></i>
+          Fri 27 May 2016
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/mobile.html">Mobile</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/android.html">android</a>,               <a href="/tag/google.html">google</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>In Android, the permission system was one of the major security concerns of the platform for many reasons:  </p>
+<ul>
+<li>The user has only two choices, he either allows the application to have all the permissions during the installation 
+without having any clue why and when the app will use them, or denies the permissions and cannot use the application at 
+all(take it or leave it offer).</li>
+<li>Once the permission is granted during the installation, the application can use it during its lifecycle without any 
+notification and the user cannot deny the permissions unless he removes the application from the device.</li>
+<li>It is not transparent for users, but also for developers. You might have a cool feature in your app which required a 
+specific permission, but if you don't educate the user and give him context why you need it, the user can find it 
+suspicious and decides to not install your application.</li>
+<li>There is over 130 unique permissions available in Android. Even if the user checks the permissions one by one during 
+the installation, he can quickly get confused (What is exactly BODY_SENSORS ? what is the difference between BLUETOOTH, 
+BLUETOOTH_ADMIN, BLUETOOTH_PRIVILEGED ?)</li>
+</ul>
+<h3>Finally Android permission system is redesigned !</h3>
+<p>Starting Android (6.0 Marshmallow), application will not be granted any permission at installation time. Instead, 
+application has to ask the user for a permission one-by-one at runtime. It is an important step to protect the users 
+privacy by allowing them to choose what the application can access and what it can't and the user still have the option 
+to use the application.</p>
+<p>Developers should understand the new permission system and adapt the application to handle all the cases and give users 
+a good user experience.</p>
+<p>So as a developer, what should I know about the new Android's permission system:  </p>
+<p>1- There are two kind of permissions: Normal permissions and dangerous permissions<br/>
+        - Normal permissions allow the application to access external data excluding the user's private information. 
+        You can check the full list here.  <br/>
+        - Dangerous permissions allow the application to access the user's private information. <br/>
+2- For all Android versions, each time you want to use a permission (both normal and dangerous permissions), you need 
+to add the appropriate <uses-permission> tag in your app manifest. <br/>
+3- Normal permissions are granted automatically, and you don't need to request them at runtime.<br/>
+4- If you try to access a private information, you need to explicitly require its "dangerous permission" at runtime, 
+otherwise the method will throw a SecurityException causing a crash of the application.<br/>
+5- The user can revoke a granted permission anytime !<br/>
+6- Permissions are grouped into Permission Groups, so if the user has previously granted a permission of a specific 
+group, you can use all the other permissions of that group without requesting them again. <br/>
+7- To adapt your application to the new permission system, you need to follow the logic below:  </uses-permission></p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/android_m_n_permissions/Diagram_v.png" title="Diagram"/></p>
+<p>8- Since an example is worth a thousand words, let's go through some code. In this example, we will request the 
+permission <code>SEND_SMS</code> (see comments):</p>
+<div class="highlight"><pre><span></span><span class="c1">//Unique identifier to identify each permission request</span>
+<span class="kd">final</span> <span class="kd">private</span> <span class="kt">int</span> <span class="n">REQUEST_CODE_ASK_PERMISSIONS</span> <span class="o">=</span> <span class="mi">999</span><span class="o">;</span>
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">sendSMSWrapper</span><span class="o">()</span> <span class="o">{</span>
+    <span class="c1">//Check to see if the permission is available</span>
+    <span class="kt">int</span> <span class="n">hasSendSMSPermission</span> <span class="o">=</span> <span class="n">checkSelfPermission</span><span class="o">(</span><span class="n">Manifest</span><span class="o">.</span><span class="na">permission</span><span class="o">.</span><span class="na">SEND_SMS</span><span class="o">);</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">hasSendSMSPermission</span> <span class="o">!=</span> <span class="n">PackageManager</span><span class="o">.</span><span class="na">PERMISSION_GRANTED</span><span class="o">)</span> <span class="o">{</span>
+     <span class="c1">//if the permission is not granted, check if the user has already denied this request</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">shouldShowRequestPermissionRationale</span><span class="o">(</span><span class="n">Manifest</span><span class="o">.</span><span class="na">permission</span><span class="o">.</span><span class="na">SEND_SMS</span><span class="o">))</span> <span class="o">{</span>
+  <span class="c1">//Explain to the user why we need to send the sms</span>
+      <span class="n">Snackbar</span><span class="o">.</span><span class="na">Make</span><span class="o">(</span><span class="n">layout</span><span class="o">,</span> <span class="s">"Send SMS is required to share the new events with your contacts."</span><span class="o">,</span> <span class="n">Snackbar</span><span class="o">.</span><span class="na">LengthIndefinite</span><span class="o">)</span>
+             <span class="o">.</span><span class="na">SetAction</span><span class="o">(</span><span class="s">"OK"</span><span class="o">,</span> <span class="n">v</span> <span class="o">=&gt;</span> <span class="n">RequestPermissions</span><span class="o">(</span><span class="n">Manifest</span><span class="o">.</span><span class="na">permission</span><span class="o">.</span><span class="na">SEND_SMS</span><span class="o">,</span> <span class="n">REQUEST_CODE_ASK_PERMISSIONS</span><span class="o">))</span>
+             <span class="o">.</span><span class="na">Show</span><span class="o">();</span>
+      <span class="k">return</span><span class="o">;</span>
+            <span class="o">}</span>
+ <span class="c1">// request the permission</span>
+        <span class="n">requestPermissions</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">[]</span> <span class="o">{</span><span class="n">Manifest</span><span class="o">.</span><span class="na">permission</span><span class="o">.</span><span class="na">SEND_SMS</span><span class="o">},</span>
+                <span class="n">REQUEST_CODE_ASK_PERMISSIONS</span><span class="o">);</span>
+        <span class="k">return</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="c1">// execute your code using the user's private information</span>
+    <span class="n">sendSMS</span><span class="o">();</span>
+<span class="o">}</span>
+
+
+<span class="nd">@Override</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">onRequestPermissionsResult</span><span class="o">(</span><span class="kt">int</span> <span class="n">requestCode</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">permissions</span><span class="o">,</span> <span class="kt">int</span><span class="o">[]</span> <span class="n">grantResults</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">switch</span> <span class="o">(</span><span class="n">requestCode</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="n">REQUEST_CODE_ASK_PERMISSIONS</span><span class="o">:</span>
+            <span class="o">{</span>
+            <span class="c1">// Check for SEND_SMS</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">CheckSelfPermission</span><span class="o">(</span><span class="n">Manifest</span><span class="o">.</span><span class="na">permission</span><span class="o">.</span><span class="na">SEND_SMS</span><span class="o">)</span> <span class="o">==</span> <span class="n">PackageManager</span><span class="o">.</span><span class="na">PERMISSION_GRANTED</span>
+       <span class="o">{</span>
+                <span class="c1">//Permission Granted</span>
+                <span class="n">sendSMS</span><span class="o">();</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="c1">// Permission Denied</span>
+         <span class="n">var</span> <span class="n">snack</span> <span class="o">=</span> <span class="n">Snackbar</span><span class="o">.</span><span class="na">Make</span><span class="o">(</span><span class="n">layout</span><span class="o">,</span> <span class="s">"Send SMS permission is denied."</span><span class="o">,</span> <span class="n">Snackbar</span><span class="o">.</span><span class="na">LengthShort</span><span class="o">);</span>
+         <span class="n">snack</span><span class="o">.</span><span class="na">Show</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="k">break</span><span class="o">;</span>
+        <span class="k">default</span><span class="o">:</span>
+            <span class="kd">super</span><span class="o">.</span><span class="na">onRequestPermissionsResult</span><span class="o">(</span><span class="n">requestCode</span><span class="o">,</span> <span class="n">permissions</span><span class="o">,</span> <span class="n">grantResults</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+<p>9- To ensure the backward compatibility, we recommend to use Support Library v4 which implements the new methods for 
+Android API level &lt; 23, so you can write only one code and the library will return the corresponding value based on the 
+Android version. Otherwise, you need to check manually the Android version and apply the old permission system for 
+Android API level &lt; 23 and the new permission system for the newer Android API level.</p>
+<div class="highlight"><pre><span></span><span class="k">if</span> <span class="o">(</span><span class="n">Build</span><span class="o">.</span><span class="na">VERSION</span><span class="o">.</span><span class="na">SDK_INT</span> <span class="o">&gt;=</span> <span class="mi">23</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// Runtime permission system</span>
+<span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+    <span class="c1">// Old permission system</span>
+<span class="o">}</span>
+</pre></div>
+<p>10- It is important to understand the new Android's permission system in order to give your users a better user 
+experience. However, to make your code shorter and cleaner, you can handle the permissions using a 3rd party library. 
+Our favorite is PermissionsDispatcher which provides a simple annotation-based API and covers all the basic usages.</p>
+<p>11- To learn more about the new permission system, you can check the following references:   </p>
+<ul>
+<li>Declaring Permissions  </li>
+<li>Using Permissions</li>
+<li>Permissions Best Practices</li>
+<li>List of all Android permissions</li>
+<li>Android Marshmallow 6.0: Asking For Permission </li>
+</ul>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

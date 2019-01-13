@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  Reinforcement Learning & Automated Testing - part 1 | Autonomous Security
+</title>
+    <link rel="canonical" href="/reinforcement-learning-automated-testing-part-1.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="I will be sharing through a series of blog posts our past experimentations with the use of reinforcement learning for automated testing, to both chase bugs and find vulnerabilities.">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  Reinforcement Learning & Automated Testing - part 1
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2018-01-22T14:03:00+01:00">
+          <i class="fa fa-calendar-o"></i>
+          Mon 22 January 2018
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/ml.html">ML</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/reinforcement-learning.html">reinforcement learning</a>,               <a href="/tag/fuzzing.html">fuzzing</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>I will be sharing through a series of blog posts our past experimentations with the use of reinforcement learning for 
+automated testing, to both chase bugs and find vulnerabilities.</p>
+<p>Our initial goal was to build a generic intelligent approach to identify vulnerabilities in mobile applications, 
+targeting initially Android Java based applications and iOS LLVM bitcode based applications. Our experimentation lead 
+us to learn about reinforcement learning and to use it for what seemed to give very interesting results.</p>
+<p>For the unfamiliar with reinforcement learning, it is a a branch of machine learning that relies on an input loop to 
+continuously enhance results.</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/reinforcement_learning/Rl_agent.png" title="Agent"/></p>
+<p>Reinforcement learning was for instance used by the AlphaGo project, that used a specialized form of reinforcement 
+learning called deep reinforcement learning and that, as the name suggests, uses deep learning.</p>
+<p>Reinforcement learning is in reality quite simple and intuitive. An agent performs an action that he sends to an 
+environment, he then collects information about the new state and action outcome (referred to as reward or punishment), 
+and finally computes a new action based on that output. The input is computed using an algorithm that is referred to 
+as a Policy.</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/reinforcement_learning/big_thumb.jpg" title="big_thumb"/></p>
+<p>Though the use of reinforcement learning for security testing AFAIK has never been mentioned before, except for 2 very 
+recent academic papers that claims to be the first ones doing so; in reality reinforcement learning has existed for 
+quite some time in some security testing tools and has already proven to produce amazing results. AFL by Michal 
+Zalewsky is the best example that has found a staggering number of vulnerabilities.</p>
+<p>AFL is commonly referred to as an evolutionary fuzzer. It generates a test case that gets passed to an instrumented 
+program, then collects the execution trace and generates new inputs that aims at increasing code coverage within the 
+tested program.</p>
+<p>Evolutionary fuzzing in general needs to solve 3 problems:<br/>
+1- Fast Instrumentation<br/>
+2- Smart Code Coverage Algorithm<br/>
+3- Efficient Vulnerability Identification  </p>
+<p>Though the first (Fast Instrumentation) and last (Efficient Vulnerability Identification) problems have nothing to do 
+with reinforcement learning, I find them so intersting that I believe are worthy of getting some explanation.</p>
+<p>Instrumentation consists simply of tracing a program execution, the principle is simple, but the execution is 
+notoriously complex. Instrumentation can have several levels of granularity, per function call, per block or even per
+instruction. The higher the granularity is, the slower it gets.
+There are different ways to instrument a program:
+- Compile-time, which simply delegates the task to the compiler to add instrumentation instructions. Initially it was 
+the fastest approach, as the compiler have better understanding of the program, but most importantly the compiler is 
+able to run his optimizations on the instrumented code.
+- Software-based run-time, this approach is adapted when we don't have access to the source code of the program. This 
+is by far the slowest approach as it requires constant jumping between the instrumented code and the instrumentation 
+code. It is also very error prone and difficult to get right.
+- Hardware-based run-time, which is my favorite approach as it brings the best of both worlds; low overhead and no need 
+for source code. Intel and ARM added support in their processors for program tracing with very low overhead and both 
+AFL and HonggFuzz for instance have support for using hardware-based instrumentation.</p>
+<p>The efficient vulnerability identification is yet another complex subject. Initially most fuzzers relied on the program 
+to crash as a sign for a potential vulnerability. However crashes may not occur if for instance the overflow is too 
+small to overwrite anything interesting.</p>
+<p>More advanced approach is the one used by sanitizers. LLVM sanitizers perform compile time modifications to a program 
+to make the triggering fact of a vulnerability more apparent, like the use of memory guards that wraps every memory 
+allocation.</p>
+<p>All of these approaches are solely adapted for low level languages hunting low level vulnerabilities, like overflows or 
+use-after-free.</p>
+<p>The 2nd component of evolutionary fuzzers is the algorithm to increase the code coverage and this is where the 
+reinforcement part happens.</p>
+<p>AFL uses genetic algorithms to generate input and relies on the block based instrumentation to identify if an input was 
+capable of triggering a new path in the program.</p>
+<p>Genetic algorithms aim at imitating natural selection which consists of producing input, running a set of modifications 
+(crossover and mutation) and selecting from that generated population a subset that passes a fitness function .</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/reinforcement_learning/GAPROC0.GIF" title="GAPROC0"/></p>
+<p>In the case of AFL genetic algorithm:<br/>
+- crossover operation consists for instance of block switching between inputs; <br/>
+- mutation operation consists for instance of bit flipping; <br/>
+- fitness function measures the discovery of a new execution path.  </p>
+<p>AFL also adds an element of curiosity or an exploration bonus by privileging input that triggers new execution path. 
+Genetic algorithms and exploration bonuses are commonly used in modern reinforcement learning solutions.</p>
+<p>Other approaches, that predate AFL genetic algorithm, consist of using  SMT and SAT solvers. This approach requires a 
+highly granular instrumentation and attempts to solve complex equations to discover a new execution branch.</p>
+<p>SMT solvers have known huge progress in the recent years, but other than the non-public SAGE, there is no fuzzer that 
+has reported good results with this approach.</p>
+<p>Other fuzzers tries a combination of multiple techniques to build on the strengths of both approaches. Driller for 
+instance that won the 2nd place at the DARPA Cyber Grand challenge used both AFL, a modified Qemu and Z3 SMT solver.</p>
+<p>In the next blog posts I will dive into some limitations of these approaches and present the use reinforcement learning 
+for identifying high level vulnerabilities like SQLi, Command Injection and XXE.</p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

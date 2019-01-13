@@ -100,23 +100,23 @@
     </header>
     <div class="content">
       <p>Apparently <a href="http://www.popularmechanics.com/technology/apps/news/a18837/facebook-has-been-intentionally-crashing-its-android-app-on-users/">Facebook is crashing their apps</a>
- intentionally in order to test users reaction and evaluate their adherence to Facebook service. This post is however
- not about the user's behavioral analysis, but about the technical aspects of how it is done - or just an excuse to
- dive into JNI reversing.</p>
+intentionally in order to test users reaction and evaluate their adherence to Facebook service. This post is however
+not about the user's behavioral analysis, but about the technical aspects of how it is done - or just an excuse to
+dive into JNI reversing.</p>
 <p>First of all, what lead us to talk about JNI for the Facebook app crashing feature. Well using the Ostorlab Mobile
- Application Security Scanner (it's completely free and you can test it already) we discovered the following native
- methods:</p>
+Application Security Scanner (it's completely free and you can test it already) we discovered the following native
+methods:</p>
 <p><img alt="alt text" class="img-fluid" src="/static/img/reversing_jni/1.png"/></p>
 <p>Native method indicate that it is implemented in native code using JNI (Java Native Interface).</p>
 <p>JNI is basically the way you can write code accessible from Java in C/C++. This is usually done for different reasons,
- performance could be one of them. The advantages of writing native code are mainly performance, better code
- obfuscation and the possibility to access low level functionality. Disadvantages are lack of portability and higher
- security risk.</p>
+performance could be one of them. The advantages of writing native code are mainly performance, better code
+obfuscation and the possibility to access low level functionality. Disadvantages are lack of portability and higher
+security risk.</p>
 <p>Native methods are therefore excellent candidates from an attacker's perspective if they handle user's input. In the 
 example of the Instagram app, native methods are used to handle images and videos and are therefore potentially 
 vulnerable to memory corruption errors.</p>
 <p>Reversing and Fuzzing of JNI seems to be an under-researched subject, despite it's important role for Android Mobile
- Applications.</p>
+Applications.</p>
 <p>Let's get back to our Facebook <code>crashThisProcess</code> method, how can we find the method implementation ?</p>
 <p>If we check Java JNI specification on how the JVM resolve methods, here is what is written:</p>
 <p><img alt="alt text" class="img-fluid" src="/static/img/reversing_jni/2.jpg"/></p>
@@ -238,8 +238,8 @@ for the string, we find it in the .rodata section:</p>
 <span class="p">}</span>
 </pre></div>
 <p>The methods seem to be registered dynamically during loading in the JNI_OnLoad function using registerNativeMethods
- function. The last element points to the JNI method body. For instance in the case of the crashThisProcess method,
-  this is the disassembly of the method body (the name of the subroutine was added manually):</p>
+function. The last element points to the JNI method body. For instance in the case of the crashThisProcess method,
+this is the disassembly of the method body (the name of the subroutine was added manually):</p>
 <p>We can see that the function writes <code>0x2A</code> to memory address <code>0x000000</code>, which will segfault the process.</p>
 <p>Experimenting with method automated identification of these structure using the Java method signature unique format
 and then checking the rest of the structure, allowed us to write a script (available on Github) that finds JNI

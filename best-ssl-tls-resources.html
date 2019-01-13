@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  Best SSL/TLS resources (Attacks, Tools, Talks) | Autonomous Security
+</title>
+    <link rel="canonical" href="/best-ssl-tls-resources.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="This article will reference the best current resources on SSL/TLS.">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  Best SSL/TLS resources (Attacks, Tools, Talks)
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2015-08-25T07:40:00+02:00">
+          <i class="fa fa-calendar-o"></i>
+          Tue 25 August 2015
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/pentest.html">Pentest</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/android.html">android</a>,               <a href="/tag/ios.html">ios</a>,               <a href="/tag/ssltls.html">ssl/tls</a>,               <a href="/tag/cryptography.html">cryptography</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>This article will reference the best current resources on SSL/TLS, if you have other references you think should be 
+included, please point them in the comment section and we'll include them:  </p>
+<h3>Attacks:</h3>
+<p><strong>BEAST</strong>: implicit initialization vector in CBC mode </p>
+<p><strong>CRIME</strong>: use compression as an auxiliary channel</p>
+<p><strong>TIME &amp; BREACH</strong>: enhanced version of CRIME attack</p>
+<p><strong>LUCKY 13</strong>: oracle padding in CBC</p>
+<p><strong>RC4</strong>: statistical bias</p>
+<p><strong>POODLE</strong>: oracle padding in CBC for  SSL 3.0</p>
+<p><strong>Triple Handshake</strong>: Impersonate client by retrieving credentials when connecting to a malicious website</p>
+<p><strong>GOTO fail in Apple</strong>: Bad coding practice leading to certificate validation failure</p>
+<p><strong>GOTO fail in GnuTLS</strong>: Bad coding practice leading to certificate validation failure</p>
+<p><strong>Heartbleed</strong>: stack overflow in read operation</p>
+<p><strong>Universal Signature Forgery in NSS</strong>: A flaw in the Network Security Services (NSS) library allows attackers to create 
+forged RSA certificates</p>
+<p><strong>Server Code Execution in SChannel</strong>: Remote code execurtion vulnerability in the Microsoft Server</p>
+<p><strong>Early CCS</strong>: error in the state machine of OpenSSL</p>
+<p><strong>SMACK/FREAK/SKIP-TLS</strong>: Vulnerabilities in some SSL implementation that could disable encryption or downgraded to weak 
+crackable encryption </p>
+<p><strong>LogJam</strong>: Downgrade attack similar to the FREAK, but is the result of a flaw in the protocol rather than a flaw in the 
+implementation</p>
+<h3>Tools:</h3>
+<p><strong>TrustKit</strong>: iOS 8+ universal SSL pinning without the need to change the code.<br/>
+<a href="https://datatheorem.github.io/TrustKit/">https://datatheorem.github.io/TrustKit/</a></p>
+<p><strong>FlexTLS</strong>: Tool for testing TLS implementation and easier writing of attack PoC.<br/>
+<a href="https://www.smacktls.com/">https://www.smacktls.com/</a></p>
+<p><strong>nogotofail</strong>: on-path blackbox network traffic security testing tool<br/>
+<a href="https://github.com/google/nogotofail">https://github.com/google/nogotofail</a></p>
+<h3>Talks:</h3>
+<p><strong>Truskit</strong>: Code injection in iOS 8 for the greater good<br/>
+<a href="https://www.blackhat.com/docs/us-15/materials/us-15-Diquet-TrustKit-Code-Injection-On-iOS-8-For-The-Greater-Good.pdf">https://www.blackhat.com/docs/us-15/materials/us-15-Diquet-TrustKit-Code-Injection-On-iOS-8-For-The-Greater-Good.pdf</a></p>
+<p><strong>Breaking HTTPS with BGP Hijacking</strong><br/>
+<a href="https://www.blackhat.com/docs/us-15/materials/us-15-Gavrichenkov-Breaking-HTTPS-With-BGP-Hijacking.pdf">https://www.blackhat.com/docs/us-15/materials/us-15-Gavrichenkov-Breaking-HTTPS-With-BGP-Hijacking.pdf</a></p>
+<p><strong>SSL/TLS current status, 3 years after</strong> (<em>french</em>)<br/>
+<a href="https://www.sstic.org/2015/presentation/ssltls_soa_reloaded/">https://www.sstic.org/2015/presentation/ssltls_soa_reloaded/</a></p>
+<p><strong>FLEXTLS</strong>: A Tool for Testing TLS Implementations<br/>
+<a href="https://www.usenix.org/conference/woot15/workshop-program/presentation/beurdouche">https://www.usenix.org/conference/woot15/workshop-program/presentation/beurdouche</a></p>
+<p><strong>Prying Open Pandora's Box</strong>: KCI Attacks against TLS<br/>
+<a href="https://www.usenix.org/conference/woot15/workshop-program/presentation/hlauschek">https://www.usenix.org/conference/woot15/workshop-program/presentation/hlauschek</a></p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

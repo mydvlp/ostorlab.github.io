@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  Critical attack surface of mobile applications | Autonomous Security
+</title>
+    <link rel="canonical" href="/critical-attack-surface-of-mobile-applications.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="the Attack Surface of mobile applications.">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  Critical attack surface of mobile applications
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2018-01-17T20:08:00+01:00">
+          <i class="fa fa-calendar-o"></i>
+          Wed 17 January 2018
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/mobile.html">Mobile</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/android.html">android</a>,               <a href="/tag/ios.html">ios</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p><a href="https://www.youtube.com/channel/UClcE-kVhqyiHCcjYwcpfj9w/videos">LiveOverflow</a> published an interesting 
+<a href="https://www.youtube.com/watch?v=PNuAzR_ZCbo">video</a> on Mobile Application Security where he tackled the Attack Surface 
+of mobile applications and a case of a security 'researcher' who oversells the results of his work.</p>
+<p>Mobile Applications are built on top of an environment that has attack surface reduction in mind, through the use of 
+sandboxing, explicit permission model, automated updates and the offering of an API that tries to be secure by default.</p>
+<p>However, some Mobile Applications do however expose a critical attack surface that requires special attention, either 
+due to the technology stack they are based on, the kind of usages the application offers or the interaction that the 
+application has with other components.
+Another key factor to take into account is the need for these environments to add more features and functionalities. 
+These features offers room for developers to be creative in finding new ways to use our phones, but at the same time 
+increases the attack surface. Take for instance iOS App Extension, this functionality similar to Android intents was 
+added later on to the iOS ecosystem.</p>
+<p>These are few examples that we have seen in the past as security critical vulnerabilities but are very specific to 
+the Mobile environment:   </p>
+<h3>Remotely exploitable JavaScript injection in JavaScript-based applications:</h3>
+<p>Applications developed using JavaScript Framework, like Cordova, Ionic, might be vulnerable to JavaScript or HTML 
+injection. These vulnerabilities can be leveraged into remote code injection due to the nature of the API exposed 
+through these Frameworks.</p>
+<p>For such a vulnerability to be considered critical, the attacker must have the capacity to send the malicious input 
+to other users without any special interaction.</p>
+<p>For instance, a sport's app that allows users to share their progress through a personal wall. If that wall is 
+vulnerable to JavaScript injection (XSS), then any user who views the wall of the attacker will be compromised.</p>
+<p>Even HTML injection vulnerabilities might be transformed into JavaScript injection via JavaScript Gadget attack.  </p>
+<h3>Memory corruption in native code through untrusted input:</h3>
+<p>Several applications handles the parsing of binary formats like Audio, Video and Images using native libraries. A 
+memory corruption vulnerability in these libraries using an untrusted input will result in a remote code execution.</p>
+<p>For instance, if a chat application that allows sending voice recording in MP4 format, suffers from a memory corruption 
+vulnerability, this will result in remote code execution in the context of the application.</p>
+<p>Java, Kotlin, Objective C and Swift are all memory safe languages unless unsafe APIs are used, however linking against 
+libraries in C and C++ opens the door for these kind of vulnerabilities.</p>
+<h3>Intent injection in browsable Activities exploited using drive-by attacks in Chrome:</h3>
+<p>Chrome allows sending intent with extra parameters to activities with the Browsable category. An application vulnerable 
+to injection through the intent extra parameters is vulnerable to driveby exploitation.</p>
+<p>The attacker may either entice the victim into visiting his malicious page, or serve the attack using Ads for instance. 
+Firefox browser requires extra user interaction to trigger intent sending, while most other browsers on mobile devices 
+do not support this feature.  </p>
+<h3>Communication over clear-text traffic or using insecure TLS/SSL server certificate validation:</h3>
+<p>The impact of this vulnerability depends on the nature of the exchanged data. For instance if either the authentication 
+phase or any session enabled action is performed over insecure channels, this will result in the compromise of the 
+users' session.</p>
+<p>If the application is developed in JavaScript Frameworks, the retrieval of remote JavaScript or HTML will result in a 
+remote code execution. If the application downloads a shared library (.so, .dex, .jar) over insecure channels, this will
+also result in remote code execution.</p>
+<p>An example of this vulnerability is the use of <code>ALLOW_ALL_HOSTNAME_VERIFIER</code>:</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/critical_attack_surface_mobile_application/allow_all_hostname_verifier.jpg" title="allow_all_hostname_verifier"/></p>
+<p><code>ALLOW_ALL_HOSTNAME_VERIFIER</code> implementation don't perform any validation:</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/critical_attack_surface_mobile_application/allow_all_hostname_verifier_impl.jpg" title="allow_all_hostname_verifier_impl"/></p>
+<h3>Session management shared between Mobile and Web application and the lack of Web related protection on the Mobile Backend:</h3>
+<p>Web Applications share the same browser with other web applications, which creates opportunities for a set of attacks 
+that are not applicable to mobile applications, like CRSF, session hijacking through all sorts of XSS and even 
+Clickjacking.</p>
+<p>In general, these attack vectors are absent for Mobile Applications, therefore developers don't need to implement any 
+security protection against these attacks.</p>
+<p>Some Mobile Application backends do however share the session management system between the web and the mobile backend, 
+which creates the opportunity for an attacker to link against the mobile backend from the browser and exploit these 
+vulnerabilities.</p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

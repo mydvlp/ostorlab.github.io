@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  Finding security bugs in Android applications the hard way | Autonomous Security
+</title>
+    <link rel="canonical" href="/finding-security-bugs-in-android-applications-the-hard-way.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="Ostorlab is a community effort to build a mobile application vulnerability scanner to help developers build secure mobile applications. One of the new key components of the scanner detection capabilities is a new shiny static taint engine for Android Dalvik Bytecode that was heavily optimized for performance and low false positives.">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  Finding security bugs in Android applications the hard way
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2017-06-16T16:39:00+02:00">
+          <i class="fa fa-calendar-o"></i>
+          Fri 16 June 2017
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/mobile.html">Mobile</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/android.html">android</a>,               <a href="/tag/content-provider.html">content provider</a>,               <a href="/tag/sql-injection.html">sql injection</a>,               <a href="/tag/command-injection.html">command injection</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>Ostorlab is a community effort to build a mobile application vulnerability scanner to help developers build secure 
+mobile applications. One of the new key components of the scanner detection capabilities is a new shiny static taint 
+engine for Android Dalvik Bytecode that was heavily optimized for performance and low false positives.</p>
+<p>A simple version of a Static Taint Engine computes how user controlled input propagates inside an application. Tracking 
+the flow uses tainting of variables and attributes, hence the name 'Static Taint Engine'. This taint information serves 
+to detect vulnerabilities in the application.</p>
+<p>Few months after shipping the initial version of the engine and scanning over 10.000 mobile applications uploaded by 
+users, these are some of the key results we have collected so far.</p>
+<p>The static taint engine has detected <strong>over 600 high risk vulnerabilities</strong>, ranging from content provider SQL 
+injection, insecure SSL/TLS server certificate validation (detected statically), command injection, insecure shared 
+preferences, weak cryptography, hard coded keys and many other classes of vulnerabilities.</p>
+<p>These are some examples of the vulnerabilities found using the static taint engine, I was cautious to only share 
+examples from voluntarily insecure applications:  </p>
+<h3>Content provider SQL injection:</h3>
+<p>The second parameter (1 if you count from 0) of the method <code>android.database.sqlite.SQLiteDatabase.delete()</code> will 
+cause a SQL injection if user-controlled.<br/>
+The parameter is exposed by the exported content provider method <code>jakhar.aseem.diva.NotesProvider.delete()</code>, hence 
+making the application vulnerable to a SQL injection:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span>TAINT<span class="o">]</span> Parameter <span class="s1">'1'</span> <span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>&gt;&gt;&gt; Sink <span class="s1">'[u'</span>Landroid/database/sqlite/SQLiteDatabase<span class="p">;</span><span class="s1">', u'</span>delete<span class="s1">', u'</span><span class="o">(</span>Ljava/lang/String<span class="p">;</span> Ljava/lang/String<span class="p">;</span> <span class="o">[</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>I<span class="s1">', u'</span><span class="m">1</span><span class="s1">', u'</span>SQL_SINK<span class="s1">']'</span>
+<span class="o">===========</span>
+<span class="p">|</span>__Ljakhar/aseem/diva/NotesProvider<span class="p">;</span>-&gt;delete<span class="o">(</span>Landroid/net/Uri<span class="p">;</span> Ljava/lang/String<span class="p">;</span> <span class="o">[</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>I / <span class="m">0</span>
+ <span class="p">|</span>__Landroid/content/ContentResolver<span class="p">;</span>-&gt;notifyChange<span class="o">(</span>Landroid/net/Uri<span class="p">;</span> Landroid/database/ContentObserver<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/content/Context<span class="p">;</span>-&gt;getContentResolver<span class="o">()</span>Landroid/content/ContentResolver<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/content/UriMatcher<span class="p">;</span>-&gt;match<span class="o">(</span>Landroid/net/Uri<span class="p">;</span><span class="o">)</span>I <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/database/sqlite/SQLiteDatabase<span class="p">;</span>-&gt;delete<span class="o">(</span>Ljava/lang/String<span class="p">;</span> Ljava/lang/String<span class="p">;</span> <span class="o">[</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>I <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/net/Uri<span class="p">;</span>-&gt;getLastPathSegment<span class="o">()</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/text/TextUtils<span class="p">;</span>-&gt;isEmpty<span class="o">(</span>Ljava/lang/CharSequence<span class="p">;</span><span class="o">)</span>Z <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljakhar/aseem/diva/NotesProvider<span class="p">;</span>-&gt;getContext<span class="o">()</span>Landroid/content/Context<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/IllegalArgumentException<span class="p">;</span>-&gt;<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;<span class="o">()</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;append<span class="o">(</span>C<span class="o">)</span>Ljava/lang/StringBuilder<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;append<span class="o">(</span>Ljava/lang/Object<span class="p">;</span><span class="o">)</span>Ljava/lang/StringBuilder<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;append<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/StringBuilder<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;toString<span class="o">()</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="nv">1</span>
+<span class="o">===========</span>
+</pre></div>
+<p>User controlled parameter is used to construct an SQL parameter vulnerable to SQL injection
+Method <code>jakhar.aseem.diva.NotesProvider.delete()</code>:</p>
+<div class="highlight"><pre><span></span><span class="kd">public</span> <span class="kt">int</span> <span class="nf">delete</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">Uri</span> <span class="n">p8</span><span class="o">,</span> <span class="n">String</span> <span class="n">p9</span><span class="o">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">p10</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">v0</span><span class="o">;</span>
+        <span class="k">switch</span> <span class="o">(</span><span class="n">jakhar</span><span class="o">.</span><span class="na">aseem</span><span class="o">.</span><span class="na">diva</span><span class="o">.</span><span class="na">NotesProvider</span><span class="o">.</span><span class="na">urimatcher</span><span class="o">.</span><span class="na">match</span><span class="o">(</span><span class="n">p8</span><span class="o">))</span> <span class="o">{</span>
+            <span class="k">case</span> <span class="mi">1</span><span class="o">:</span>
+                <span class="n">v0</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">mDB</span><span class="o">.</span><span class="na">delete</span><span class="o">(</span><span class="s">"notes"</span><span class="o">,</span> <span class="n">p9</span><span class="o">,</span> <span class="n">p10</span><span class="o">);</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">case</span> <span class="mi">2</span><span class="o">:</span>
+                <span class="n">String</span> <span class="n">v2_6</span><span class="o">;</span>
+                <span class="kt">int</span> <span class="n">v3_0</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">mDB</span><span class="o">;</span>
+                <span class="n">StringBuilder</span> <span class="n">v5_1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">().</span><span class="na">append</span><span class="o">(</span><span class="s">"_id = "</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">p8</span><span class="o">.</span><span class="na">getLastPathSegment</span><span class="o">());</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">text</span><span class="o">.</span><span class="na">TextUtils</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">(</span><span class="n">p9</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="n">v2_6</span> <span class="o">=</span> <span class="s">""</span><span class="o">;</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                    <span class="n">v2_6</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">().</span><span class="na">append</span><span class="o">(</span><span class="s">" AND ("</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">p9</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="mi">41</span><span class="o">).</span><span class="na">toString</span><span class="o">();</span>
+                <span class="o">}</span>
+                <span class="n">v0</span> <span class="o">=</span> <span class="n">v3_0</span><span class="o">.</span><span class="na">delete</span><span class="o">(</span><span class="s">"notes"</span><span class="o">,</span> <span class="n">v5_1</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">v2_6</span><span class="o">).</span><span class="na">toString</span><span class="o">(),</span> <span class="n">p10</span><span class="o">);</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">default</span><span class="o">:</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalArgumentException</span><span class="o">(</span><span class="k">new</span> <span class="n">StringBuilder</span><span class="o">().</span><span class="na">append</span><span class="o">(</span><span class="s">"Divanotes(delete): Unsupported URI "</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">p8</span><span class="o">).</span><span class="na">toString</span><span class="o">());</span>
+        <span class="o">}</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">getContext</span><span class="o">().</span><span class="na">getContentResolver</span><span class="o">().</span><span class="na">notifyChange</span><span class="o">(</span><span class="n">p8</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">v0</span><span class="o">;</span>
+    <span class="o">}</span>
+</pre></div>
+<h3>Command injection:</h3>
+<p>This is an example of the use of a dangerous commands that sets insecure permissive permissions using the mode '777', 
+read write execute to user, group and other, it can't get more permissive that that :/ :</p>
+<div class="highlight"><pre><span></span><span class="o">[</span>TAINT<span class="o">]</span> String <span class="s1">'/system/bin/chmod -R 0777 F1.txt file12.txt'</span> <span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>&gt;&gt;&gt; Sink <span class="s1">'[u'</span>Ljava/lang/Runtime<span class="p">;</span><span class="s1">', u'</span>exec<span class="s1">', u'</span><span class="o">([</span>Ljava/lang/String<span class="p">;</span> <span class="o">[</span>Ljava/lang/String<span class="p">;</span> Ljava/io/File<span class="p">;</span><span class="o">)</span>Ljava/lang/Process<span class="p">;</span><span class="s1">', u'</span>Object<span class="s1">', u'</span>COMMAND_SINK<span class="s1">']'</span>
+<span class="o">===========</span>
+<span class="p">|</span>__Lcom/ibm/android/analyzer/test/cmdinjection/CommandInjection6<span class="p">;</span>-&gt;onCreate<span class="o">(</span>Landroid/os/Bundle<span class="p">;</span><span class="o">)</span>V / <span class="m">0</span>
+ <span class="p">|</span>__Landroid/app/Activity<span class="p">;</span>-&gt;onCreate<span class="o">(</span>Landroid/os/Bundle<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/content/Intent<span class="p">;</span>-&gt;getStringExtra<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Lcom/ibm/android/analyzer/test/cmdinjection/CommandInjection6<span class="p">;</span>-&gt;cmdRuntime<span class="o">(</span>Ljava/lang/String<span class="p">;</span> I<span class="o">)</span>V / <span class="m">1</span>
+  <span class="p">|</span>__Landroid/content/Context<span class="p">;</span>-&gt;getFilesDir<span class="o">()</span>Ljava/io/File<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Landroid/util/Log<span class="p">;</span>-&gt;i<span class="o">(</span>Ljava/lang/String<span class="p">;</span> Ljava/lang/String<span class="p">;</span><span class="o">)</span>I <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/io/File<span class="p">;</span>-&gt;getAbsolutePath<span class="o">()</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/Exception<span class="p">;</span>-&gt;printStackTrace<span class="o">()</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/Runtime<span class="p">;</span>-&gt;exec<span class="o">(</span>Ljava/lang/String<span class="p">;</span> <span class="o">[</span>Ljava/lang/String<span class="p">;</span> Ljava/io/File<span class="p">;</span><span class="o">)</span>Ljava/lang/Process<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/Runtime<span class="p">;</span>-&gt;exec<span class="o">(</span>Ljava/lang/String<span class="p">;</span> <span class="o">[</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/Process<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/Runtime<span class="p">;</span>-&gt;exec<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/Process<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/Runtime<span class="p">;</span>-&gt;exec<span class="o">([</span>Ljava/lang/String<span class="p">;</span> <span class="o">[</span>Ljava/lang/String<span class="p">;</span> Ljava/io/File<span class="p">;</span><span class="o">)</span>Ljava/lang/Process<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/Runtime<span class="p">;</span>-&gt;exec<span class="o">([</span>Ljava/lang/String<span class="p">;</span> <span class="o">[</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/Process<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/Runtime<span class="p">;</span>-&gt;exec<span class="o">([</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/Process<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/Runtime<span class="p">;</span>-&gt;getRuntime<span class="o">()</span>Ljava/lang/Runtime<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;<span class="o">()</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;append<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/StringBuilder<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;toString<span class="o">()</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+ <span class="p">|</span>__Lcom/ibm/android/analyzer/test/cmdinjection/CommandInjection6<span class="p">;</span>-&gt;getIntent<span class="o">()</span>Landroid/content/Intent<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;<span class="o">()</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;append<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/StringBuilder<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;toString<span class="o">()</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="nv">1</span>
+<span class="o">===========</span>
+</pre></div>
+<p>The application executes a dangerous command<br/>
+Method <code>com.ibm.android.analyzer.test.cmdinjection.CommandInjection6.onCreate()</code>:</p>
+<div class="highlight"><pre><span></span><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onCreate</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">os</span><span class="o">.</span><span class="na">Bundle</span> <span class="n">p7</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="kd">super</span><span class="o">.</span><span class="na">onCreate</span><span class="o">(</span><span class="n">p7</span><span class="o">);</span>
+        <span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">Intent</span> <span class="n">v2</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">getIntent</span><span class="o">();</span>
+        <span class="n">String</span> <span class="n">v0</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="na">getStringExtra</span><span class="o">(</span><span class="s">"exec"</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">v0</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">String</span> <span class="n">v1</span> <span class="o">=</span> <span class="n">v2</span><span class="o">.</span><span class="na">getStringExtra</span><span class="o">(</span><span class="s">"execR"</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">v1</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">this</span><span class="o">.</span><span class="na">cmdRuntime</span><span class="o">(</span><span class="s">"/system/bin/chmod 0777 /data/data/com.ibm.android.analyzer.test/1.txt"</span><span class="o">,</span> <span class="mi">5</span><span class="o">);</span>
+                <span class="k">this</span><span class="o">.</span><span class="na">cmdRuntime</span><span class="o">(</span><span class="s">"/system/bin/chmod -R 0777 F1.txt file12.txt"</span><span class="o">,</span> <span class="mi">5</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="k">this</span><span class="o">.</span><span class="na">cmdRuntime</span><span class="o">(</span><span class="k">new</span> <span class="n">StringBuilder</span><span class="o">().</span><span class="na">append</span><span class="o">(</span><span class="s">"/system/bin/sh "</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">v1</span><span class="o">).</span><span class="na">toString</span><span class="o">(),</span> <span class="mi">5</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">cmdRuntime</span><span class="o">(</span><span class="n">v0</span><span class="o">,</span> <span class="mi">5</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="k">return</span><span class="o">;</span>
+    <span class="o">}</span>
+</pre></div>
+<h3>Hard-coded encryption keys:</h3>
+<p>The use of hard-coded encryption keys are another example of common vulnerabilities we see in mobile applications, in 
+the example, the string 'superSecurePassword' is used to called an encryption method:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span>TAINT<span class="o">]</span> String <span class="s1">'superSecurePassword'</span> <span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>&gt;&gt;&gt; Sink <span class="s1">'[u'</span>Ljavax/crypto/spec/SecretKeySpec<span class="p">;</span><span class="s1">', u'', u'</span><span class="o">([</span>B Ljava/lang/String<span class="p">;</span><span class="o">)</span>V<span class="s1">', u'</span><span class="m">0</span><span class="s1">', u'</span>CIPHER_SINK<span class="s1">']'</span>
+<span class="o">===========</span>
+<span class="p">|</span>__Lcom/android/insecurebankv2/MyBroadCastReceiver<span class="p">;</span>-&gt;onReceive<span class="o">(</span>Landroid/content/Context<span class="p">;</span> Landroid/content/Intent<span class="p">;</span><span class="o">)</span>V / <span class="m">0</span>
+ <span class="p">|</span>__Landroid/content/Context<span class="p">;</span>-&gt;getSharedPreferences<span class="o">(</span>Ljava/lang/String<span class="p">;</span> I<span class="o">)</span>Landroid/content/SharedPreferences<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/content/Intent<span class="p">;</span>-&gt;getStringExtra<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/content/SharedPreferences<span class="p">;</span>-&gt;getString<span class="o">(</span>Ljava/lang/String<span class="p">;</span> Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/telephony/SmsManager<span class="p">;</span>-&gt;getDefault<span class="o">()</span>Landroid/telephony/SmsManager<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/telephony/SmsManager<span class="p">;</span>-&gt;sendTextMessage<span class="o">(</span>Ljava/lang/String<span class="p">;</span> Ljava/lang/String<span class="p">;</span> Ljava/lang/String<span class="p">;</span> Landroid/app/PendingIntent<span class="p">;</span> Landroid/app/PendingIntent<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Landroid/util/Base64<span class="p">;</span>-&gt;decode<span class="o">(</span>Ljava/lang/String<span class="p">;</span> I<span class="o">)[</span>B <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Lcom/android/insecurebankv2/CryptoClass<span class="p">;</span>-&gt;<span class="o">()</span>V / <span class="m">1</span>
+  <span class="p">|</span>__Ljava/lang/Object<span class="p">;</span>-&gt;<span class="o">()</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+ <span class="p">|</span>__Lcom/android/insecurebankv2/CryptoClass<span class="p">;</span>-&gt;aesDeccryptedString<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/String<span class="p">;</span> / <span class="m">1</span>
+  <span class="p">|</span>__Landroid/util/Base64<span class="p">;</span>-&gt;decode<span class="o">([</span>B I<span class="o">)[</span>B <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Lcom/android/insecurebankv2/CryptoClass<span class="p">;</span>-&gt;aes256decrypt<span class="o">([</span>B <span class="o">[</span>B <span class="o">[</span>B<span class="o">)[</span>B / <span class="m">2</span>
+   <span class="p">|</span>__Ljavax/crypto/Cipher<span class="p">;</span>-&gt;doFinal<span class="o">([</span>B<span class="o">)[</span>B <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">3</span>
+   <span class="p">|</span>__Ljavax/crypto/Cipher<span class="p">;</span>-&gt;getInstance<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljavax/crypto/Cipher<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">3</span>
+   <span class="p">|</span>__Ljavax/crypto/Cipher<span class="p">;</span>-&gt;init<span class="o">(</span>I Ljava/security/Key<span class="p">;</span> Ljava/security/spec/AlgorithmParameterSpec<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">3</span>
+   <span class="p">|</span>__Ljavax/crypto/spec/IvParameterSpec<span class="p">;</span>-&gt;<span class="o">([</span>B<span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">3</span>
+   <span class="p">|</span>__Ljavax/crypto/spec/SecretKeySpec<span class="p">;</span>-&gt;<span class="o">([</span>B Ljava/lang/String<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">3</span>
+  <span class="p">|</span>__Ljava/lang/String<span class="p">;</span>-&gt;<span class="o">([</span>B Ljava/lang/String<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+  <span class="p">|</span>__Ljava/lang/String<span class="p">;</span>-&gt;getBytes<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)[</span>B <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">2</span>
+ <span class="p">|</span>__Ljava/io/PrintStream<span class="p">;</span>-&gt;println<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/Exception<span class="p">;</span>-&gt;printStackTrace<span class="o">()</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/String<span class="p">;</span>-&gt;<span class="o">([</span>B Ljava/lang/String<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/String<span class="p">;</span>-&gt;toString<span class="o">()</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;<span class="o">()</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;append<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/lang/StringBuilder<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/StringBuilder<span class="p">;</span>-&gt;toString<span class="o">()</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="nv">1</span>
+<span class="o">===========</span>
+</pre></div>
+<p>The application uses a hardcoded key to encrypt the data<br/>
+Method <code>com.android.insecurebankv2.MyBroadCastReceiver.onReceive()</code>:</p>
+<div class="highlight"><pre><span></span><span class="kd">public</span> <span class="kt">void</span> <span class="nf">onReceive</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">Context</span> <span class="n">p17</span><span class="o">,</span> <span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">Intent</span> <span class="n">p18</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="n">String</span> <span class="n">v12</span> <span class="o">=</span> <span class="n">p18</span><span class="o">.</span><span class="na">getStringExtra</span><span class="o">(</span><span class="s">"phonenumber"</span><span class="o">);</span>
+        <span class="n">String</span> <span class="n">v10</span> <span class="o">=</span> <span class="n">p18</span><span class="o">.</span><span class="na">getStringExtra</span><span class="o">(</span><span class="s">"newpass"</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">v12</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Phone number is null"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">android</span><span class="o">.</span><span class="na">content</span><span class="o">.</span><span class="na">SharedPreferences</span> <span class="n">v13</span> <span class="o">=</span> <span class="n">p17</span><span class="o">.</span><span class="na">getSharedPreferences</span><span class="o">(</span><span class="s">"mySharedPreferences"</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>
+                <span class="k">this</span><span class="o">.</span><span class="na">usernameBase64ByteString</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Base64</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">v13</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">"EncryptedUsername"</span><span class="o">,</span> <span class="mi">0</span><span class="o">),</span> <span class="mi">0</span><span class="o">),</span> <span class="s">"UTF-8"</span><span class="o">);</span>
+                <span class="n">String</span> <span class="n">v8</span> <span class="o">=</span> <span class="k">new</span> <span class="n">com</span><span class="o">.</span><span class="na">android</span><span class="o">.</span><span class="na">insecurebankv2</span><span class="o">.</span><span class="na">CryptoClass</span><span class="o">().</span><span class="na">aesDeccryptedString</span><span class="o">(</span><span class="n">v13</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">"superSecurePassword"</span><span class="o">,</span> <span class="mi">0</span><span class="o">));</span>
+                <span class="n">String</span> <span class="n">v2</span> <span class="o">=</span> <span class="n">v12</span><span class="o">.</span><span class="na">toString</span><span class="o">();</span>
+                <span class="n">String</span> <span class="n">v4</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">().</span><span class="na">append</span><span class="o">(</span><span class="s">"Updated Password from: "</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">v8</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">" to: "</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">v10</span><span class="o">).</span><span class="na">toString</span><span class="o">();</span>
+                <span class="n">android</span><span class="o">.</span><span class="na">telephony</span><span class="o">.</span><span class="na">SmsManager</span> <span class="n">v1</span> <span class="o">=</span> <span class="n">android</span><span class="o">.</span><span class="na">telephony</span><span class="o">.</span><span class="na">SmsManager</span><span class="o">.</span><span class="na">getDefault</span><span class="o">();</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="k">new</span> <span class="n">StringBuilder</span><span class="o">().</span><span class="na">append</span><span class="o">(</span><span class="s">"For the changepassword - phonenumber: "</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">v2</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">" password is: "</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">v4</span><span class="o">).</span><span class="na">toString</span><span class="o">());</span>
+                <span class="n">v1</span><span class="o">.</span><span class="na">sendTextMessage</span><span class="o">(</span><span class="n">v2</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">v4</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">v9</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">v9</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span><span class="o">;</span>
+    <span class="o">}</span>
+</pre></div>
+<h3>Insecure SSL/TLS service certificate validation:</h3>
+<p>This is an example of a method using the insecure <code>ALLOW_ALL_HOSTNAME_VERIFIER</code> to construct an SSL/TLS certificate validation scheme:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span>TAINT<span class="o">]</span> Class <span class="s1">'Lorg/apache/http/conn/ssl/SSLSocketFactory;'</span> <span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>*<span class="o">==</span>&gt;&gt;&gt; Sink <span class="s1">'[u'</span>Lorg/apache/http/conn/ssl/SSLSocketFactory<span class="p">;</span><span class="s1">', u'</span>setHostnameVerifier<span class="s1">', u'</span><span class="o">(</span>Lorg/apache/http/conn/ssl/X509HostnameVerifier<span class="p">;</span><span class="o">)</span>V<span class="s1">', u'</span>Object<span class="s1">', u'</span>SSLTLS_SINK<span class="s1">']'</span>
+<span class="o">===========</span>
+<span class="p">|</span>__Lcom/ibm/android/analyzer/test/domainvalidation/InsecureApacheSSFAllowAllHostnameVerifier<span class="nv">$1</span><span class="p">;</span>-&gt;call<span class="o">()</span>Ljava/lang/Void<span class="p">;</span> / <span class="m">0</span>
+ <span class="p">|</span>__Landroid/util/Log<span class="p">;</span>-&gt;i<span class="o">(</span>Ljava/lang/String<span class="p">;</span> Ljava/lang/String<span class="p">;</span><span class="o">)</span>I <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/lang/Exception<span class="p">;</span>-&gt;printStackTrace<span class="o">()</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/net/URL<span class="p">;</span>-&gt;<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/net/URL<span class="p">;</span>-&gt;openConnection<span class="o">()</span>Ljava/net/URLConnection<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/security/KeyStore<span class="p">;</span>-&gt;getDefaultType<span class="o">()</span>Ljava/lang/String<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/security/KeyStore<span class="p">;</span>-&gt;getInstance<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljava/security/KeyStore<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljava/security/KeyStore<span class="p">;</span>-&gt;load<span class="o">(</span>Ljava/io/InputStream<span class="p">;</span> <span class="o">[</span>C<span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljavax/net/ssl/HttpsURLConnection<span class="p">;</span>-&gt;connect<span class="o">()</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljavax/net/ssl/SSLContext<span class="p">;</span>-&gt;getInstance<span class="o">(</span>Ljava/lang/String<span class="p">;</span><span class="o">)</span>Ljavax/net/ssl/SSLContext<span class="p">;</span> <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Ljavax/net/ssl/SSLContext<span class="p">;</span>-&gt;init<span class="o">([</span>Ljavax/net/ssl/KeyManager<span class="p">;</span> <span class="o">[</span>Ljavax/net/ssl/TrustManager<span class="p">;</span> Ljava/security/SecureRandom<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Lorg/apache/http/conn/ssl/SSLSocketFactory<span class="p">;</span>-&gt;<span class="o">(</span>Ljava/security/KeyStore<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="m">1</span>
+ <span class="p">|</span>__Lorg/apache/http/conn/ssl/SSLSocketFactory<span class="p">;</span>-&gt;setHostnameVerifier<span class="o">(</span>Lorg/apache/http/conn/ssl/X509HostnameVerifier<span class="p">;</span><span class="o">)</span>V <span class="o">(</span>no childs<span class="o">)</span> / <span class="nv">1</span>
+<span class="o">===========</span>
+</pre></div>
+<p>Use of the insecure attribute <code>ALLOW_ALL_HOSTNAME_VERIFIER</code> to validate TLS certificate
+Method <code>com.ibm.android.analyzer.test.domainvalidation.InsecureApacheSSFAllowAllHostnameVerifier$1.call()</code>:</p>
+<div class="highlight"><pre><span></span><span class="kd">public</span> <span class="n">Void</span> <span class="nf">call</span><span class="o">()</span>
+    <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">android</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">i</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">this$0</span><span class="o">.</span><span class="na">TAG</span><span class="o">,</span> <span class="s">"1"</span><span class="o">);</span>
+            <span class="n">javax</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">ssl</span><span class="o">.</span><span class="na">SSLContext</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">"TLS"</span><span class="o">).</span><span class="na">init</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+            <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">URL</span> <span class="n">v4_1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">URL</span><span class="o">(</span><span class="s">"https://1.www.s81c.com/i/v17/t/ibm_logo_print.png?dv1"</span><span class="o">);</span>
+            <span class="n">android</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">i</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">this$0</span><span class="o">.</span><span class="na">TAG</span><span class="o">,</span> <span class="s">"2"</span><span class="o">);</span>
+            <span class="n">javax</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">ssl</span><span class="o">.</span><span class="na">HttpsURLConnection</span> <span class="n">v5_1</span> <span class="o">=</span> <span class="o">((</span><span class="n">javax</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">ssl</span><span class="o">.</span><span class="na">HttpsURLConnection</span><span class="o">)</span> <span class="n">v4_1</span><span class="o">.</span><span class="na">openConnection</span><span class="o">());</span>
+            <span class="n">java</span><span class="o">.</span><span class="na">security</span><span class="o">.</span><span class="na">KeyStore</span> <span class="n">v3</span> <span class="o">=</span> <span class="n">java</span><span class="o">.</span><span class="na">security</span><span class="o">.</span><span class="na">KeyStore</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="n">java</span><span class="o">.</span><span class="na">security</span><span class="o">.</span><span class="na">KeyStore</span><span class="o">.</span><span class="na">getDefaultType</span><span class="o">());</span>
+            <span class="n">v3</span><span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+            <span class="n">android</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">i</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">this$0</span><span class="o">.</span><span class="na">TAG</span><span class="o">,</span> <span class="s">"3"</span><span class="o">);</span>
+            <span class="k">new</span> <span class="n">org</span><span class="o">.</span><span class="na">apache</span><span class="o">.</span><span class="na">http</span><span class="o">.</span><span class="na">conn</span><span class="o">.</span><span class="na">ssl</span><span class="o">.</span><span class="na">SSLSocketFactory</span><span class="o">(</span><span class="n">v3</span><span class="o">).</span><span class="na">setHostnameVerifier</span><span class="o">(</span><span class="n">org</span><span class="o">.</span><span class="na">apache</span><span class="o">.</span><span class="na">http</span><span class="o">.</span><span class="na">conn</span><span class="o">.</span><span class="na">ssl</span><span class="o">.</span><span class="na">SSLSocketFactory</span><span class="o">.</span><span class="na">ALLOW_ALL_HOSTNAME_VERIFIER</span><span class="o">);</span>
+            <span class="n">android</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">i</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">this$0</span><span class="o">.</span><span class="na">TAG</span><span class="o">,</span> <span class="s">"4"</span><span class="o">);</span>
+            <span class="n">v5_1</span><span class="o">.</span><span class="na">connect</span><span class="o">();</span>
+            <span class="n">android</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">i</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">this$0</span><span class="o">.</span><span class="na">TAG</span><span class="o">,</span> <span class="s">"5"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">v0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">android</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Log</span><span class="o">.</span><span class="na">i</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">this$0</span><span class="o">.</span><span class="na">TAG</span><span class="o">,</span> <span class="s">"exception 1!"</span><span class="o">);</span>
+            <span class="n">v0</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="o">}</span>
+</pre></div>
+<h3>Key concepts:</h3>
+<p>The engine is almost a full year effort that started as a PoC in Python. Python allowed for quick prototyping, focusing 
+on the algorithms and data structures. The current implementation uses a graph representation of the taint propagation 
+inside a single function (see graph)</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/finding_security_bus_in_android_hard_way/Selection_071.jpg" title="Selection_071"/></p>
+<p>The graph is used to evaluate the taint of other functions offering a very fast and real world usable static taint 
+engine, while at same time taking into account object oriented aspect of Dalvik Bytecode to ensure accurate taint 
+propagation.</p>
+<p>To generate a taint graph, a list of execution paths are compiled and evaluated singularly, then fused with a global 
+function taint.</p>
+<p>This approach is however limited if the function has an exponential execution path structure (see graph example), this 
+problem is commonly known as path explosion and is a strong limitation of static analysis methods, like symbolic 
+execution.</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/finding_security_bus_in_android_hard_way/Selection_072.jpg" title="Selection_072"/></p>
+<p>To remediate this limitation, we transform the problem into a 'search problem' rather then a 'brute force problem'. A 
+path selection algorithm selects paths with the highest probability of the presence of a vulnerability, for instance if
+a particular path do not cross any sink function - sink functions might cause a vulnerability if called using user 
+controlled parameters - then there is no vulnerability to look for and the execution paths are excluded.</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/finding_security_bus_in_android_hard_way/pastedImage0.png" title="Pasted_Image0"/></p>
+<p>The current implementation was rewritten in C++14  after investigating several other programming languages (Rust, Go
+and C) which offered over 200x gain in execution speed.</p>
+<p>There are still room to increase performance and code coverage, but also fix several false positives due to the use of 
+a default over-tainted graph for low level native methods.</p>
+<p>These capabilities are already part of Ostorlab Scanner and are continuously, and silently :), being enhanced every day.</p>
+<p>We urge you to test it and share your feedback. If there is a vulnerability that you think we are missing or a false 
+positive that the scanner is reporting, we would love to hear from you and try to work on a ways to fix it or detect it.</p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  DAST (Dynamic Analysis), how does it work? | Autonomous Security
+</title>
+    <link rel="canonical" href="/dast-how-it-works.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="dynamic analysis">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  DAST (Dynamic Analysis), how does it work?
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2018-10-28T20:08:00+01:00">
+          <i class="fa fa-calendar-o"></i>
+          Sun 28 October 2018
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/mobile.html">Mobile</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/android.html">android</a>,               <a href="/tag/ios.html">ios</a>,               <a href="/tag/dynamic-analysis.html">dynamic analysis</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>Ostorlab uses dynamic analysis to assess mobile applications and enable detection of false positive free vulnerabilities.</p>
+<p>Dynamic analysis consists of running the application on a real Android or iOS device, monitoring application 
+interaction with different OS components and detecting insecure or potentially unsafe behaviours.</p>
+<p>The devices used in dynamic analysis are real hardware phones and tablets equipped with different OS versions for 
+different architectures.</p>
+<p>During the installation phase, iOS applications (.ipa) are resigned and instrumented before installation, Android 
+applications are installed as is without any modifications.</p>
+<p>Once the application is installed, the instrumentation engine is hooked in and starts to intercept a plethora of API 
+calls to detect use vulnerable behaviour, this includes crypto API, keychain, network, filesystem, SQL etc.</p>
+<p>A monky UI fuzzer emulates random actions and tries to increase coverage of the application, at the same time a 
+different instance is installed on a separate device where a human operator emulates complex actions that requires 
+multiple steps, or the interaction with third systems, like email registration validation, entering an SMS validation 
+code etc. The goal is to increase coverage of the application code.</p>
+<p>During the analysis step, filesystem, netowork and API calls are collected, checked passively for vulnerabilities, 
+like use of weak encryption scheme, and also dispatched to others systems to perform active testing.</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/dast_how_it_works/Selection_020.png" title="Selection_021"/></p>
+<p>During active testing, all entry points of the applications are collected and fuzzed, this includes content providers, 
+broadcast receivers, URI handlers etc.</p>
+<p>Backend system are also collected during this step and scanned for vulnerabilities, including SQL injection,  command 
+injection, XSS, etc.</p>
+<p>Some of the collectables are exported in the scan results as artifcats, like network log and screenshots.</p>
+<p><img alt="alt text" class="img-fluid" src="/static/img/dast_how_it_works/Selection_021.png" title="Selection_021"/></p>
+<p>Initially Ostorlab used Jailbroken and rooted devices to run all of its dynamic testing, this has proven to be 
+unnecessary and in some cases problematic. Use of robust and fast instrumentation engines allows the collection of all 
+the necessary information, but requires support hooking of native C level APIs, as well as platform specific APIs, like 
+JavaScript in the case Cordova and CLI in the case of Xamarin.</p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>

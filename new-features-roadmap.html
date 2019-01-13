@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link href="https://fastcdn.org/Animate.css/3.4.0/animate.min.css" rel="stylesheet">
+
+    <title>  New Features and Roadmap | Autonomous Security
+</title>
+    <link rel="canonical" href="/new-features-roadmap.html">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#333333">
+
+    <link rel="stylesheet" href="/theme/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/theme/css/pygments/default.min.css">
+    <link rel="stylesheet" href="/theme/css/theme.css">
+
+  
+  <meta name="description" content="The last few months, Ostorlab team has been hard at work adding exciting new features. Some of these have already hit production, or will do so in the upcoming weeks and months.">
+  <script>
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o);
+      a.async = 1;
+      a.src = g;
+      m = s.getElementsByTagName(o)[0];
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-61939785-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+
+
+</head>
+
+<body>
+<header class="navbar navbar-expand navbar-light flex-column flex-md-row bd-navbar">
+<div class="container">
+<a href="/" class="navbar-brand mr-0 mr-md-2 ">
+    <img class="img-fluid rounded" src=/static/img/Ostorlab.png width=90 height=90 alt="Autonomous Security">
+</a>
+<div class="navbar-nav-scroll">
+    <ul class="navbar-nav bd-navbar-nav flex-row">
+    </ul>
+</div>
+<ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+    <li class="nav-item"><a class="fa fa-github nav-link" href="https://github.com/Ostorlab" target="_blank"></a></li>
+    <li class="nav-item"><a class="fa fa-twitter nav-link" href="https://twitter.com/OstorlabSec" target="_blank"></a></li>
+</ul>
+<a class="btn btn-bd-scan d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3" href="https://ostorlab.co/scan/mobile">Scan</a>
+</div></header>
+
+<div>
+    <div class='entry-colors'>
+        <div class='color_col_1'></div>
+        <div class='color_col_2'></div>
+        <div class='color_col_3'></div>
+    </div>
+    <section class="banner">
+        <div class="container">
+            <h1 class="title">Autonomous Security</h1>
+            <p>You just can't differentiate between a 🤖🤖🤖🤖🤖🤖🤖 and the very best of humans</p>
+        </div>
+    </section>
+    <div class="main">
+        <div class="container">
+            <h1>  New Features and Roadmap
+</h1>
+            <hr>
+  <article class="article animated bounceInUp">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2018-09-20T16:14:00+02:00">
+          <i class="fa fa-calendar-o"></i>
+          Thu 20 September 2018
+        </li>
+        <li class="list-inline-item">
+          <i class="fa fa-hashtag"></i>
+          <a href="/category/ostorlab.html">Ostorlab</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fa fa-user-o"></i>
+              <a href="/author/ostorlab-team.html">Ostorlab Team</a>          </li>
+          <li class="list-inline-item">
+            <i class="fa fa-tags"></i>
+              <a href="/tag/android.html">android</a>,               <a href="/tag/web.html">web</a>,               <a href="/tag/xamarin.html">xamarin</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>The last few months, Ostorlab team has been hard at work adding exciting new features. Some of these have already hit 
+production, or will do so in the upcoming weeks and months.</p>
+<p>The most exciting feature we have been busy with is <strong>major work on the backend scanning</strong> front. Ostorlab is now able 
+to crawl HTML endpoints, supporting JavaScript heavy websites and single page applications (SPA) based on frameworks 
+like <a href="https://angular.io/">Angular</a>, <a href="https://reactjs.org/">React</a> or <a href="http://vue.js">Vue.js</a>.</p>
+<p>The new backend is augmented with a <strong>new Cross Site Scripting (XSS) scanner</strong> based on headless Chrome and a <strong>new 
+backend scanner using a novel probabilistic approach</strong>. The new backend scanner has support for SQL injection in 
+multiple context (where clause, sort clause, group by, string ...), Jinja template Injection and Command Injection and 
+we are planning to add support for over 100 other backend vulnerabilities in the upcoming months, like Mako template 
+injection Spring expression injection, etc.</p>
+<p>Ostorlab has also gone through a <strong>major rework of its infrastructure, changing its scanning scheduler</strong> to offer 
+increased scalability and robustness.</p>
+<p>Other changes include multiple bug fixes, UI tweaks, false positives fixes and new detection rules, like network 
+security configuration rules.</p>
+<p>In the upcoming months, Ostorlab team will be focused on delivering new features or extending support to the existing 
+ones. All enterprise scans will expose an <strong>Artifact section</strong> collecting traffic logs, screenshots, decompiled source 
+code, etc. The feature is almost done and will hit production sometimes next week.</p>
+<p>Ostorlab team will also be focusing its effort on <strong>enhancing support for <a href="https://visualstudio.microsoft.com/fr/xamarin/">Xamarin</a></strong>. 
+The taint engine will add support for <strong><a href="https://en.wikipedia.org/wiki/Common_Intermediate_Language">.Net IL</a></strong> and 
+source code decompilation. The backend scanner will continue its progress adding more rules and enhancing detection of 
+persistent XSS and postMessage XSS.</p>
+<p>The Ostorlab team welcomes all feedback and will be happy to answer all your questions.</p>
+    </div>
+  </article>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="/tags.html">Tags</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/" target="_blank">Scanner</a></li>
+    <li class="list-inline-item"><a href="https://ostorlab.co/about" target="_blank">About</a></li>
+  </ul>
+
+  <p class="col-sm-6 text-sm-right text-muted">
+    <i class="fa fa-envelope pr-10"></i> contact<strong>@ostorlab.co</strong>
+  </p>
+
+</div>    </div>
+</footer>
+</body>
+
+</html>
